@@ -51,18 +51,34 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-b);min-height
 #alerts-bar{padding:12px 20px 0;}
 main{max-width:900px;padding:20px 20px 60px;}
 
-/* ── MOBILE: hamburger ── */
-#hamburger{display:none;position:fixed;top:12px;left:12px;z-index:80;
-  background:var(--surface);border:1px solid var(--border);border-radius:9px;
-  padding:8px 10px;cursor:pointer;font-size:18px;color:var(--text);}
+/* ── MOBILE HEADER BAR ── */
+#mobile-header{
+  display:none;
+  align-items:center;
+  gap:12px;
+  background:var(--surface);
+  border-bottom:1px solid var(--border);
+  padding:12px 16px;
+  position:sticky;top:0;z-index:50;
+}
+#mobile-header button{
+  background:none;border:none;color:var(--text);
+  font-size:20px;cursor:pointer;padding:2px 4px;flex-shrink:0;line-height:1;
+}
+#mobile-page-title{
+  font-family:var(--font-d);font-size:19px;color:#c4c0ff;
+}
 #overlay-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:55;}
+#hamburger{display:none;}
 @media(max-width:680px){
   #sidebar{transform:translateX(-100%);transition:transform .25s ease;}
   #sidebar.open{transform:translateX(0);}
-  #hamburger{display:block;}
+  #mobile-header{display:flex;}
   #overlay-bg.show{display:block;}
   #content{margin-left:0;}
+  #alerts-bar{padding-top:4px;}
   main{padding:16px 14px 60px;}
+  .sec-title{display:none;}
 }
 
 /* ── ALERTS ── */
@@ -179,6 +195,11 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <!-- ── CONTENT ── -->
 <div id="content">
+  <!-- Mobile top bar -->
+  <div id="mobile-header">
+    <button onclick="toggleSidebar()">&#9776;</button>
+    <span id="mobile-page-title">Dashboard</span>
+  </div>
   <div id="alerts-bar"><div id="alerts"></div></div>
   <main>
 
@@ -448,11 +469,13 @@ function confirmReset(){
 }
 
 // ── NAVIGATION ───────────────────────────────────
+const pageTitles={dashboard:'Dashboard',budget:'Budget',bills:'Bills & Payments',debt:'Debt Planner',cards:'Inactive Cards',quick:'Quick Update'};
 function show(sec,btn){
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));
   $(sec).classList.add('active');
   if(btn) btn.classList.add('active');
+  const mob=$('mobile-page-title');if(mob) mob.textContent=pageTitles[sec]||'';
   closeSidebar();
   renderAll();
 }
