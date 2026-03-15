@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <title>FinanceOS</title>
 <style>
-  /* ── 100% self-contained — zero external requests ── */
+  /* ── 100% self-contained - zero external requests ── */
   :root {
     --bg:      #080812;
     --surface: #0f0f1e;
@@ -88,7 +88,7 @@
   .quick-icon  { font-size: 26px; margin-bottom: 8px; }
   .quick-label { font-size: 13px; font-weight: 600; }
 
-  /* MODAL — slides up from bottom (iOS sheet style) */
+  /* MODAL - slides up from bottom (iOS sheet style) */
   .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.78); z-index: 100; align-items: flex-end; justify-content: center; }
   .overlay.open { display: flex; }
   .modal { background: #15152a; border: 1px solid var(--border2); border-radius: 20px 20px 0 0; padding: 24px 20px 36px; width: 100%; max-width: 500px; animation: slideUp .22s ease; max-height: 92vh; overflow-y: auto; }
@@ -149,7 +149,7 @@
     </div>
     <div class="card">
       <div class="section-label" style="color:var(--muted)">Recent Quick Updates</div>
-      <div id="d-transactions"><div class="empty">No updates yet — use Quick Update to log cash or payments.</div></div>
+      <div id="d-transactions"><div class="empty">No updates yet - use Quick Update to log cash or payments.</div></div>
     </div>
   </div>
 
@@ -451,7 +451,7 @@ function recurBadge(freq) {
 // ── RENDERS ──────────────────────────────────────────
 function renderAlerts() {
   const a=[];
-  data.bills.forEach(b=>{ const d=daysUntil(b.dueDate); if(b.status!=='Paid'&&d<0) a.push({msg:`${b.name} is OVERDUE by ${Math.abs(d)} day(s)`,color:'#ef4444'}); else if(b.status!=='Paid'&&d<=7) a.push({msg:`${b.name} due in ${d} day(s) — ${usd(b.amount)}`,color:'#f59e0b'}); });
+  data.bills.forEach(b=>{ const d=daysUntil(b.dueDate); if(b.status!=='Paid'&&d<0) a.push({msg:`${b.name} is OVERDUE by ${Math.abs(d)} day(s)`,color:'#ef4444'}); else if(b.status!=='Paid'&&d<=7) a.push({msg:`${b.name} due in ${d} day(s) - ${usd(b.amount)}`,color:'#f59e0b'}); });
   data.cards.forEach(c=>{ const d=daysUntil(c.nextReminder); if(d<=7) a.push({msg:`Use your ${c.name} card soon to keep it active (${Math.max(0,d)} day(s))`,color:'#818cf8'}); });
   $('alerts').innerHTML=a.map(x=>`<div class="alert" style="background:${x.color}18;border:1px solid ${x.color}44;color:${x.color}">⚠️ ${x.msg}</div>`).join('');
 }
@@ -468,7 +468,7 @@ function renderDashboard() {
   const txns=[...data.transactions].reverse().slice(0,5);
   $('d-transactions').innerHTML=txns.length?txns.map(t=>`
     <div class="row"><div><div class="row-label">${t.description}</div><div class="row-sub">${t.date} · ${t.type}</div></div>
-    <div style="color:var(--red);font-weight:600">−${usd(t.amount)}</div></div>`).join(''):'<div class="empty">No updates yet.</div>';
+    <div style="color:var(--red);font-weight:600">-${usd(t.amount)}</div></div>`).join(''):'<div class="empty">No updates yet.</div>';
 }
 
 function renderBudget() {
@@ -548,7 +548,7 @@ function renderTxns() {
   $('txn-list').innerHTML=data.transactions.length?[...data.transactions].reverse().map(t=>`
     <div class="row"><div><div class="row-label">${t.description}</div><div class="row-sub">${t.date} · ${t.type}</div></div>
     <div class="row-actions">
-      <span style="color:var(--red);font-weight:600">−${usd(t.amount)}</span>
+      <span style="color:var(--red);font-weight:600">-${usd(t.amount)}</span>
       <button class="btn btn-secondary btn-sm" onclick="openEditTxn(${t.id})">✏️</button>
       <button class="btn btn-danger btn-sm" onclick="deleteItem('transactions',${t.id})">✕</button>
     </div></div>`).join(''):'<div class="empty">No updates logged yet.</div>';
