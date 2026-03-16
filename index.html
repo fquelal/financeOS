@@ -1030,8 +1030,8 @@ function renderCards(){
           ${urgent?`<div style="color:var(--accent2);font-size:12px;font-weight:700;margin-top:5px">Use this card soon!</div>`:''}
         </div>
         <div class="row-actions">
-          <button class="btn btn-primary btn-sm" onclick="markCardUsed(${c.id});addToCalendar('Use ${c.name} card','${c.nextReminder}','Keep card active')">Used + Cal</button>
-          <button class="btn btn-secondary btn-sm" onclick="addToCalendar('Use ${c.name} card','${c.nextReminder}','Keep card active')">📅</button>
+          <button class="btn btn-sm" style="background:rgba(34,197,94,.15);color:var(--green)" onclick="markCardUsed(${c.id})">✅ Mark Used</button>
+          <button class="btn btn-secondary btn-sm" onclick="addToCalendar('Use ${c.name} card','${c.nextReminder}','Keep card active')">📅 Remind</button>
           <button class="btn btn-danger btn-sm" onclick="deleteItem('cards',${c.id})">✕</button>
         </div>
       </div>
