@@ -171,6 +171,34 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 .summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:20px;}
 .summary-box{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;}
 .apr-badge{display:inline-flex;align-items:center;gap:3px;background:rgba(239,68,68,.15);color:#ef4444;border-radius:6px;padding:2px 7px;font-size:10px;font-weight:700;}
+
+/* ── PIN LOCK ── */
+#pin-screen{display:none;position:fixed;inset:0;background:var(--bg);z-index:300;flex-direction:column;align-items:center;justify-content:center;gap:24px;}
+#pin-screen.show{display:flex;}
+.pin-logo{font-family:var(--font-d);color:var(--accent);font-size:26px;text-align:center;}
+.pin-logo span{display:block;font-size:12px;color:var(--muted);font-family:var(--font-b);margin-top:4px;}
+.pin-dots{display:flex;gap:14px;margin:8px 0;}
+.pin-dot{width:14px;height:14px;border-radius:50%;background:var(--border2);transition:background .15s;}
+.pin-dot.filled{background:var(--accent);}
+.pin-error{font-size:13px;color:var(--red);min-height:18px;text-align:center;}
+.pin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:220px;}
+.pin-key{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;font-size:20px;font-weight:600;cursor:pointer;text-align:center;color:var(--text);font-family:var(--font-b);transition:background .1s,transform .1s;}
+.pin-key:active{background:var(--border2);transform:scale(.95);}
+.pin-key.wide{grid-column:span 2;}
+.pin-key.del{font-size:16px;}
+
+/* ── CHART ── */
+.chart-wrap{position:relative;width:100%;height:220px;margin-top:8px;}
+canvas{width:100%!important;}
+
+/* ── BUDGET TARGETS ── */
+.target-bar-wrap{margin-top:6px;}
+.target-bar-bg{background:var(--border);border-radius:4px;height:6px;overflow:hidden;margin-top:4px;}
+.target-bar-fill{height:6px;border-radius:4px;transition:width .4s ease;}
+
+/* ── NET WORTH ── */
+.nw-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px;}
+.nw-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;}
 </style>
 </head>
 <body>
@@ -179,6 +207,32 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 <button id="hamburger" onclick="toggleSidebar()">&#9776;</button>
 <div id="overlay-bg" onclick="closeSidebar()"></div>
 
+<!-- PIN LOCK SCREEN -->
+<div id="pin-screen">
+  <div class="pin-logo">💼 FinanceOS<span>Enter your PIN to continue</span></div>
+  <div class="pin-dots">
+    <div class="pin-dot" id="pd0"></div>
+    <div class="pin-dot" id="pd1"></div>
+    <div class="pin-dot" id="pd2"></div>
+    <div class="pin-dot" id="pd3"></div>
+  </div>
+  <div class="pin-error" id="pin-error"></div>
+  <div class="pin-grid">
+    <button class="pin-key" onclick="pinKey('1')">1</button>
+    <button class="pin-key" onclick="pinKey('2')">2</button>
+    <button class="pin-key" onclick="pinKey('3')">3</button>
+    <button class="pin-key" onclick="pinKey('4')">4</button>
+    <button class="pin-key" onclick="pinKey('5')">5</button>
+    <button class="pin-key" onclick="pinKey('6')">6</button>
+    <button class="pin-key" onclick="pinKey('7')">7</button>
+    <button class="pin-key" onclick="pinKey('8')">8</button>
+    <button class="pin-key" onclick="pinKey('9')">9</button>
+    <button class="pin-key del" onclick="pinDel()">⌫</button>
+    <button class="pin-key" onclick="pinKey('0')">0</button>
+    <button class="pin-key" onclick="pinClear()" style="font-size:12px;color:var(--muted)">Clear</button>
+  </div>
+</div>
+
 <!-- ── SIDEBAR ── -->
 <div id="sidebar">
   <div class="brand">💼 FinanceOS<span>Personal Finance</span></div>
@@ -186,9 +240,12 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
   <button class="nav-item" onclick="show('budget',this)"><span class="ni">💰</span>Budget</button>
   <button class="nav-item" onclick="show('bills',this)"><span class="ni">📋</span>Bills</button>
   <button class="nav-item" onclick="show('debt',this)"><span class="ni">📉</span>Debt Planner</button>
+  <button class="nav-item" onclick="show('networth',this)"><span class="ni">🏦</span>Net Worth</button>
+  <button class="nav-item" onclick="show('insights',this)"><span class="ni">📈</span>Insights</button>
   <button class="nav-item" onclick="show('cards',this)"><span class="ni">💳</span>Cards</button>
   <button class="nav-item" onclick="show('quick',this)"><span class="ni">⚡</span>Quick Update</button>
   <div class="nav-settings">
+    <button class="nav-item" onclick="lockApp()" id="lock-nav-btn" style="display:none"><span class="ni">🔒</span>Lock App</button>
     <button class="nav-item" onclick="openModal('settings')"><span class="ni">⚙️</span>Settings</button>
   </div>
 </div>
@@ -205,7 +262,10 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
     <!-- DASHBOARD -->
     <div id="dashboard" class="section active">
-      <h2 class="sec-title" style="margin-bottom:18px">Financial Overview</h2>
+      <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px;margin-bottom:18px">
+        <h2 class="sec-title">Financial Overview</h2>
+        <div id="today-display" style="font-size:13px;color:var(--muted);font-weight:600"></div>
+      </div>
       <div class="card-grid">
         <div class="stat-card"><div class="stat-label">Total Income</div><div class="stat-value" id="d-income" style="color:var(--green)">$0.00</div></div>
         <div class="stat-card"><div class="stat-label">Total Expenses</div><div class="stat-value" id="d-expenses" style="color:var(--yellow)">$0.00</div></div>
@@ -271,12 +331,62 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
           </div>
           <div id="method-desc" style="font-size:13px;color:var(--muted);margin-bottom:16px"></div>
         </div>
-        <div class="field" style="max-width:280px;margin-bottom:20px">
-          <label>Extra Monthly Payment ($)</label>
-          <input id="extra-payment" type="number" inputmode="decimal" placeholder="0.00" value="0" oninput="renderDebt()"/>
+
+        <!-- Cash flow breakdown -->
+        <div class="card" style="margin-bottom:18px" id="cash-flow-panel">
+          <div class="section-label" style="color:var(--muted)">Available Cash Breakdown</div>
+          <div id="cash-flow-rows"></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding-top:10px;margin-top:4px;border-top:1px solid var(--border)">
+            <span style="font-size:13px;font-weight:700">Available for Debt Payments</span>
+            <span id="cash-available" style="font-family:var(--font-d);font-size:20px;color:var(--green)">$0.00</span>
+          </div>
         </div>
+
         <div class="summary-grid" id="debt-summary"></div>
         <div id="debt-list"></div>
+      </div>
+    </div>
+
+    <!-- NET WORTH -->
+    <div id="networth" class="section">
+      <div class="sec-header">
+        <h2 class="sec-title">Net Worth</h2>
+        <button class="btn btn-primary" onclick="openModal('asset')">+ Add Asset</button>
+      </div>
+      <div class="nw-grid">
+        <div class="nw-card"><div class="stat-label">Total Assets</div><div class="stat-value" id="nw-assets" style="color:var(--green)">$0.00</div></div>
+        <div class="nw-card"><div class="stat-label">Total Debt</div><div class="stat-value" id="nw-debts" style="color:var(--red)">$0.00</div></div>
+        <div class="nw-card"><div class="stat-label">Net Worth</div><div class="stat-value" id="nw-total">$0.00</div></div>
+      </div>
+      <div class="card">
+        <div class="section-label" style="color:var(--muted)">Assets</div>
+        <div id="asset-list"><div class="empty">No assets added yet.</div></div>
+      </div>
+    </div>
+
+    <!-- INSIGHTS -->
+    <div id="insights" class="section">
+      <h2 class="sec-title" style="margin-bottom:18px">Insights</h2>
+
+      <!-- Spending Chart -->
+      <div class="card" style="margin-bottom:16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+          <div class="section-label" style="color:var(--muted);margin-bottom:0">Monthly Spending Trend</div>
+          <select id="chart-months" onchange="renderInsights()" style="background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:5px 10px;color:var(--text);font-size:12px;-webkit-appearance:none">
+            <option value="6">Last 6 months</option>
+            <option value="12" selected>Last 12 months</option>
+          </select>
+        </div>
+        <div class="chart-wrap"><canvas id="spending-chart"></canvas></div>
+      </div>
+
+      <!-- Budget vs Actual -->
+      <div class="card" style="margin-bottom:16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+          <div class="section-label" style="color:var(--muted);margin-bottom:0">Budget vs Actual</div>
+          <button class="btn btn-secondary btn-sm" onclick="openModal('target')">+ Set Target</button>
+        </div>
+        <div id="budget-targets"><div class="empty">No targets set yet. Add a budget target per category.</div></div>
       </div>
     </div>
 
@@ -314,6 +424,13 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 <div class="overlay" id="modal-settings">
   <div class="modal">
     <div class="modal-header"><span class="modal-title">⚙️ Settings</span><button class="close-btn" onclick="closeModal('settings')">✕</button></div>
+
+    <!-- PIN Lock -->
+    <div style="background:rgba(129,140,248,.08);border:1px solid rgba(129,140,248,.2);border-radius:12px;padding:14px;margin-bottom:12px">
+      <div style="font-size:13px;font-weight:700;color:var(--accent2);margin-bottom:5px">🔒 PIN Lock</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.6" id="pin-status-text">No PIN set. Add a PIN to lock the app on startup.</div>
+      <button class="btn btn-full" style="background:rgba(129,140,248,.15);color:var(--accent2);padding:10px" id="pin-setup-btn" onclick="openPinSetup()">🔒 Set Up PIN</button>
+    </div>
 
     <!-- Auto-save info -->
     <div style="background:rgba(108,99,255,.1);border:1px solid rgba(108,99,255,.25);border-radius:12px;padding:14px;margin-bottom:12px">
@@ -410,10 +527,11 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
       <select id="b-recur"><option>No</option><option>Monthly</option><option>Weekly</option><option>Yearly</option></select>
     </div>
     <button class="btn btn-primary btn-full" onclick="saveBill()">Save</button>
+    <div id="bill-delete-wrap" style="display:none;margin-top:10px">
+      <button class="btn btn-danger btn-full" onclick="deleteBillFromModal()">🗑️ Remove this Bill / Debt</button>
+    </div>
   </div>
 </div>
-
-<!-- CARD -->
 <div class="overlay" id="modal-card">
   <div class="modal">
     <div class="modal-header"><span class="modal-title">Add Inactive Card</span><button class="close-btn" onclick="closeModal('card')">✕</button></div>
@@ -426,6 +544,118 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
     </div>
     <div class="field"><label>Notes (optional)</label><input id="c-notes" placeholder="e.g. Use for gas only"/></div>
     <button class="btn btn-primary btn-full" onclick="saveCard()">Save Card</button>
+  </div>
+</div>
+
+<!-- ASSET -->
+<div class="overlay" id="modal-asset">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title" id="asset-modal-title">Add Asset</span><button class="close-btn" onclick="closeModal('asset')">✕</button></div>
+    <input type="hidden" id="a-id"/>
+    <div class="field"><label>Asset Name</label><input id="a-name" placeholder="e.g. Chase Savings, 401k, Tesla"/></div>
+    <div class="field"><label>Category</label>
+      <select id="a-cat">
+        <option value="cash">💵 Savings / Cash</option>
+        <option value="invest">📈 Investments / Stocks</option>
+        <option value="property">🏠 Property / Real Estate</option>
+        <option value="vehicle">🚗 Vehicle</option>
+      </select>
+    </div>
+    <div class="field"><label>Current Value ($)</label><input id="a-value" type="number" inputmode="decimal" placeholder="0.00"/></div>
+    <div class="field"><label>Notes (optional)</label><input id="a-notes" placeholder="e.g. Estimated market value"/></div>
+    <button class="btn btn-primary btn-full" onclick="saveAsset()">Save Asset</button>
+  </div>
+</div>
+
+<!-- BUDGET TARGET -->
+<div class="overlay" id="modal-target">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title" id="target-modal-title">Set Budget Target</span><button class="close-btn" onclick="closeModal('target')">✕</button></div>
+    <input type="hidden" id="tg-id"/>
+    <div class="field"><label>Category</label>
+      <select id="tg-cat">
+        <option>Housing</option><option>Food</option><option>Transport</option>
+        <option>Utilities</option><option>Subscriptions</option><option>Healthcare</option>
+        <option>Entertainment</option><option>Savings</option><option>Other</option>
+      </select>
+    </div>
+    <div class="field"><label>Monthly Target ($)</label><input id="tg-amount" type="number" inputmode="decimal" placeholder="e.g. 400"/></div>
+    <button class="btn btn-primary btn-full" onclick="saveTarget()">Save Target</button>
+  </div>
+</div>
+
+<!-- PIN SETUP -->
+<div class="overlay" id="modal-pinsetup">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title" id="pinsetup-title">Set Up PIN</span><button class="close-btn" onclick="closeModal('pinsetup')">✕</button></div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.6" id="pinsetup-desc">Choose a 4-digit PIN to lock the app on startup.</div>
+    <div class="field"><label>New PIN (4 digits)</label><input id="pin-new" type="password" inputmode="numeric" maxlength="4" placeholder="----"/></div>
+    <div class="field" id="pin-confirm-field"><label>Confirm PIN</label><input id="pin-confirm" type="password" inputmode="numeric" maxlength="4" placeholder="----"/></div>
+    <div id="pinsetup-error" style="color:var(--red);font-size:12px;min-height:16px;margin-bottom:10px"></div>
+    <button class="btn btn-primary btn-full" onclick="savePinSetup()">Save PIN</button>
+    <button class="btn btn-danger btn-full" id="pin-remove-btn" style="margin-top:8px;display:none" onclick="removePin()">Remove PIN Lock</button>
+  </div>
+</div>
+
+<!-- SCHEDULE REGULAR BILL -->
+<div class="overlay" id="modal-schedulebill">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">📅 Schedule Payment</span>
+      <button class="close-btn" onclick="closeModal('schedulebill')">✕</button>
+    </div>
+    <div style="background:rgba(255,255,255,.04);border-radius:12px;padding:12px 14px;margin-bottom:16px">
+      <div style="font-size:15px;font-weight:700" id="sb-name"></div>
+      <div style="font-size:12px;color:var(--muted);margin-top:3px" id="sb-due"></div>
+    </div>
+    <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;font-weight:700">Payment Amount</div>
+    <button id="sb-min-btn" class="btn btn-full" style="background:rgba(108,99,255,.12);color:var(--accent2);padding:12px;justify-content:space-between;margin-bottom:10px" onclick="sbSelect('min')">
+      <span>Minimum / Standard</span><span id="sb-min-val" style="font-weight:700"></span>
+    </button>
+    <div class="field">
+      <label>Or enter custom amount ($)</label>
+      <input id="sb-custom" type="number" inputmode="decimal" placeholder="0.00" oninput="sbSelect('custom')"/>
+    </div>
+    <button class="btn btn-primary btn-full" onclick="confirmScheduleBill()">Confirm Schedule</button>
+  </div>
+</div>
+
+<!-- PAY DEBT -->
+<div class="overlay" id="modal-paydebt">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">💳 Record Payment</span>
+      <button class="close-btn" onclick="closeModal('paydebt')">✕</button>
+    </div>
+    <div style="background:rgba(255,255,255,.04);border-radius:12px;padding:12px 14px;margin-bottom:16px">
+      <div style="font-size:15px;font-weight:700" id="pd-name"></div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px">
+        Balance: <span id="pd-balance" style="color:var(--red)"></span>
+        &nbsp;|&nbsp; APR: <span id="pd-apr" style="color:var(--yellow)"></span>
+      </div>
+    </div>
+    <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;font-weight:700">Payment Amount</div>
+    <div style="display:grid;gap:8px;margin-bottom:16px">
+      <button id="pd-min-btn" class="btn btn-full" style="background:rgba(108,99,255,.12);color:var(--accent2);padding:12px;justify-content:space-between" onclick="selectPayAmount('min')">
+        <span>Minimum Payment</span><span id="pd-min-val" style="font-weight:700"></span>
+      </button>
+      <button id="pd-sug-btn" class="btn btn-full" style="background:rgba(34,197,94,.1);color:var(--green);padding:12px;justify-content:space-between" onclick="selectPayAmount('suggested')">
+        <span>Suggested (Planner)</span><span id="pd-sug-val" style="font-weight:700"></span>
+      </button>
+      <button id="pd-full-btn" class="btn btn-full" style="background:rgba(251,146,60,.1);color:#fb923c;padding:12px;justify-content:space-between" onclick="selectPayAmount('full')">
+        <span>Pay in Full</span><span id="pd-full-val" style="font-weight:700"></span>
+      </button>
+    </div>
+    <div class="field">
+      <label>Or enter custom amount ($)</label>
+      <input id="pd-custom" type="number" inputmode="decimal" placeholder="0.00" oninput="selectPayAmount('custom')"/>
+    </div>
+    <div id="pd-breakdown" style="background:rgba(255,255,255,.03);border-radius:10px;padding:12px;margin-bottom:14px;font-size:12px;display:none">
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="color:var(--muted)">Interest portion</span><span id="pd-interest-portion" style="color:var(--red)"></span></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="color:var(--muted)">Principal portion</span><span id="pd-principal-portion" style="color:var(--green)"></span></div>
+      <div style="display:flex;justify-content:space-between;padding-top:6px;border-top:1px solid var(--border);font-weight:700"><span>New Balance</span><span id="pd-new-balance" style="color:var(--accent2)"></span></div>
+    </div>
+    <button class="btn btn-primary btn-full" onclick="confirmDebtPayment()">Confirm Payment</button>
   </div>
 </div>
 
@@ -483,13 +713,19 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 <script>
 'use strict';
 const STORAGE_KEY='financeOS_data';
-let data={income:[],expenses:[],bills:[],cards:[],transactions:[]};
+const PIN_KEY='financeOS_pin';
+let data={income:[],expenses:[],bills:[],cards:[],transactions:[],assets:[],targets:[]};
 let currentTxnType='Withdrawal';
 let debtMethod='avalanche';
+let pinBuffer='';
+let pinMode='unlock'; // 'unlock' | 'setup-new' | 'setup-confirm'
+let pinNewTemp='';
+let chartInstance=null;
 
 const $=id=>document.getElementById(id);
 const usd=n=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(n||0);
 const today=()=>new Date().toISOString().split('T')[0];
+const fmtDate=d=>{if(!d||d==='N/A')return'N/A';const[y,mo,dy]=d.split('-');return`${mo}-${dy}-${y}`;};
 const daysUntil=d=>Math.ceil((new Date(d)-new Date(today()))/86400000);
 const pct=n=>(n||0).toFixed(2)+'%';
 
@@ -616,11 +852,22 @@ function loadDemoData(){
       {id:5003, description:'Birthday cash gift',       amount:100, type:'Adjustment',   date:pastDt(7)},
       {id:5004, description:'ATM - Chase branch',       amount:300, type:'Withdrawal',   date:pastDt(12)},
       {id:5005, description:'Extra student loan payment',amount:100, type:'Extra Payment', date:pastDt(15)},
+    ],
+    assets:[
+      {id:6001, name:'Chase Savings Account', category:'cash',     value:8500,  notes:'Emergency fund'},
+      {id:6002, name:'Fidelity 401k',          category:'invest',   value:22000, notes:'Employer matched'},
+      {id:6003, name:'Tesla Model 3',           category:'vehicle',  value:28000, notes:'2022, estimated KBB'},
+      {id:6004, name:'Condo - Jersey City',     category:'property', value:310000,notes:'Estimated Zillow value'},
+    ],
+    targets:[
+      {id:7001, category:'Food',          amount:400},
+      {id:7002, category:'Entertainment', amount:200},
+      {id:7003, category:'Transport',     amount:250},
+      {id:7004, category:'Subscriptions', amount:60},
     ]
   };
   saveData();
   closeModal('settings');
-  // Navigate to dashboard
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));
   $('dashboard').classList.add('active');
@@ -629,7 +876,153 @@ function loadDemoData(){
   renderAll();
   showToast('Demo data loaded!');
 }
-const pageTitles={dashboard:'Dashboard',budget:'Budget',bills:'Bills & Payments',debt:'Debt Planner',cards:'Inactive Cards',quick:'Quick Update'};
+// ── PIN LOCK ─────────────────────────────────────
+function checkPinOnLoad(){
+  const pin=localStorage.getItem(PIN_KEY);
+  if(pin){$('pin-screen').classList.add('show');$('lock-nav-btn').style.display='flex';}
+}
+function lockApp(){
+  const pin=localStorage.getItem(PIN_KEY);
+  if(!pin){showToast('No PIN set - go to Settings');return;}
+  pinBuffer='';updatePinDots();$('pin-error').textContent='';
+  $('pin-screen').classList.add('show');closeSidebar();
+}
+function pinKey(k){
+  if(pinBuffer.length>=4)return;
+  pinBuffer+=k;updatePinDots();
+  if(pinBuffer.length===4)setTimeout(checkPin,120);
+}
+function pinDel(){pinBuffer=pinBuffer.slice(0,-1);updatePinDots();}
+function pinClear(){pinBuffer='';updatePinDots();}
+function updatePinDots(){
+  for(let i=0;i<4;i++)$('pd'+i).classList.toggle('filled',i<pinBuffer.length);
+}
+function checkPin(){
+  const stored=localStorage.getItem(PIN_KEY);
+  if(pinBuffer===stored){
+    $('pin-screen').classList.remove('show');
+    pinBuffer='';updatePinDots();$('pin-error').textContent='';
+  }else{
+    $('pin-error').textContent='Incorrect PIN. Try again.';
+    pinBuffer='';updatePinDots();
+  }
+}
+function openPinSetup(){
+  const existing=localStorage.getItem(PIN_KEY);
+  $('pinsetup-title').textContent=existing?'Change PIN':'Set Up PIN';
+  $('pinsetup-desc').textContent=existing?'Enter a new 4-digit PIN.':'Choose a 4-digit PIN to lock the app on startup.';
+  $('pin-remove-btn').style.display=existing?'block':'none';
+  $('pin-new').value='';$('pin-confirm').value='';$('pinsetup-error').textContent='';
+  $('modal-pinsetup').classList.add('open');
+}
+function savePinSetup(){
+  const n=$('pin-new').value.trim(),c=$('pin-confirm').value.trim();
+  if(!/^\d{4}$/.test(n)){$('pinsetup-error').textContent='PIN must be exactly 4 digits.';return;}
+  if(n!==c){$('pinsetup-error').textContent='PINs do not match.';return;}
+  localStorage.setItem(PIN_KEY,n);
+  $('lock-nav-btn').style.display='flex';
+  closeModal('pinsetup');closeModal('settings');
+  showToast('PIN saved!');
+}
+function removePin(){
+  if(confirm('Remove PIN lock? The app will no longer lock on startup.')){
+    localStorage.removeItem(PIN_KEY);
+    $('lock-nav-btn').style.display='none';
+    closeModal('pinsetup');showToast('PIN removed.');
+  }
+}
+
+// ── ASSETS ───────────────────────────────────────
+function openEditAsset(id){
+  const a=data.assets.find(x=>x.id===id);if(!a)return;
+  $('asset-modal-title').textContent='Edit Asset';
+  $('a-id').value=a.id;$('a-name').value=a.name;$('a-cat').value=a.category;
+  $('a-value').value=a.value;$('a-notes').value=a.notes||'';
+  $('modal-asset').classList.add('open');
+}
+function saveAsset(){
+  const name=$('a-name').value.trim(),cat=$('a-cat').value,val=parseFloat($('a-value').value),notes=$('a-notes').value.trim();
+  if(!name||!val)return;
+  const eid=parseInt($('a-id').value);
+  const item={id:eid||Date.now(),name,category:cat,value:val,notes};
+  data.assets=eid?data.assets.map(a=>a.id===eid?item:a):[...data.assets,item];
+  $('a-name').value='';$('a-value').value='';$('a-notes').value='';$('a-id').value='';
+  closeModal('asset');saveData();renderAll();
+}
+
+// ── BUDGET TARGETS ────────────────────────────────
+function saveTarget(){
+  const cat=$('tg-cat').value,amt=parseFloat($('tg-amount').value);
+  if(!cat||!amt)return;
+  if(!data.targets)data.targets=[];
+  const eid=parseInt($('tg-id').value);
+  const existing=data.targets.find(t=>t.category===cat&&t.id!==(eid||0));
+  if(existing&&!eid){existing.amount=amt;}
+  else{
+    const item={id:eid||Date.now(),category:cat,amount:amt};
+    data.targets=eid?data.targets.map(t=>t.id===eid?item:t):[...data.targets,item];
+  }
+  $('tg-cat').value='';$('tg-amount').value='';$('tg-id').value='';
+  closeModal('target');saveData();renderAll();
+}
+
+// ── CHART ─────────────────────────────────────────
+function getMonthlyExpenses(months){
+  const result=[];
+  for(let i=months-1;i>=0;i--){
+    const d=new Date();d.setMonth(d.getMonth()-i);
+    const yr=d.getFullYear(),mo=d.getMonth();
+    const label=d.toLocaleString('default',{month:'short',year:'2-digit'});
+    const total=data.expenses.filter(e=>{
+      if(!e.date)return false;
+      const ed=new Date(e.date);
+      return ed.getFullYear()===yr&&ed.getMonth()===mo;
+    }).reduce((s,e)=>s+e.amount,0);
+    result.push({label,total});
+  }
+  return result;
+}
+function drawChart(pts){
+  const canvas=$('spending-chart');if(!canvas)return;
+  const ctx=canvas.getContext('2d');
+  const W=canvas.parentElement.offsetWidth||320,H=220;
+  canvas.width=W;canvas.height=H;
+  ctx.clearRect(0,0,W,H);
+  if(!pts.length)return;
+  const pad={t:20,r:20,b:36,l:56};
+  const cw=W-pad.l-pad.r,ch=H-pad.t-pad.b;
+  const maxVal=Math.max(...pts.map(p=>p.total),1);
+  const xStep=cw/(pts.length-1||1);
+  // Grid
+  ctx.strokeStyle='#1e1e3a';ctx.lineWidth=1;
+  for(let i=0;i<=4;i++){
+    const y=pad.t+ch-(ch*i/4);
+    ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(pad.l+cw,y);ctx.stroke();
+    ctx.fillStyle='#555566';ctx.font='11px -apple-system,sans-serif';ctx.textAlign='right';
+    ctx.fillText('$'+(maxVal*i/4).toFixed(0),pad.l-6,y+4);
+  }
+  // Fill gradient
+  const grad=ctx.createLinearGradient(0,pad.t,0,pad.t+ch);
+  grad.addColorStop(0,'rgba(108,99,255,0.35)');grad.addColorStop(1,'rgba(108,99,255,0.02)');
+  ctx.beginPath();
+  pts.forEach((p,i)=>{const x=pad.l+i*xStep,y=pad.t+ch-(ch*p.total/maxVal);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+  ctx.lineTo(pad.l+(pts.length-1)*xStep,pad.t+ch);ctx.lineTo(pad.l,pad.t+ch);
+  ctx.closePath();ctx.fillStyle=grad;ctx.fill();
+  // Line
+  ctx.beginPath();ctx.strokeStyle='#6c63ff';ctx.lineWidth=2.5;ctx.lineJoin='round';
+  pts.forEach((p,i)=>{const x=pad.l+i*xStep,y=pad.t+ch-(ch*p.total/maxVal);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+  ctx.stroke();
+  // Dots + x labels
+  pts.forEach((p,i)=>{
+    const x=pad.l+i*xStep,y=pad.t+ch-(ch*p.total/maxVal);
+    ctx.beginPath();ctx.arc(x,y,4,0,Math.PI*2);
+    ctx.fillStyle='#6c63ff';ctx.fill();ctx.strokeStyle='#080812';ctx.lineWidth=2;ctx.stroke();
+    ctx.fillStyle='#555566';ctx.font='10px -apple-system,sans-serif';ctx.textAlign='center';
+    ctx.fillText(p.label,x,H-8);
+  });
+}
+
+const pageTitles={dashboard:'Dashboard',budget:'Budget',bills:'Bills & Payments',debt:'Debt Planner',networth:'Net Worth',insights:'Insights',cards:'Inactive Cards',quick:'Quick Update'};
 function show(sec,btn){
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));
@@ -644,8 +1037,15 @@ function show(sec,btn){
 function openModal(type,extra){
   if(type==='income'){$('income-modal-title').textContent='Add Income';$('i-id').value='';$('i-source').value='';$('i-amount').value='';$('i-date').value=today();$('i-freq').value='Monthly';}
   if(type==='expense'){$('expense-modal-title').textContent='Add Expense';$('e-id').value='';$('e-cat').value='';$('e-desc').value='';$('e-amount').value='';$('e-date').value=today();$('e-freq').value='One-time';}
-  if(type==='bill'){$('bill-modal-title').textContent='Add Bill / Debt';$('b-id').value='';$('b-name').value='';$('b-amount').value='';$('b-date').value='';$('b-recur').value='No';$('b-type').value='bill';$('b-balance').value='';$('b-apr').value='';toggleDebtFields();}
+  if(type==='bill'){$('bill-modal-title').textContent='Add Bill / Debt';$('b-id').value='';$('b-name').value='';$('b-amount').value='';$('b-date').value='';$('b-recur').value='No';$('b-type').value='bill';$('b-balance').value='';$('b-apr').value='';toggleDebtFields();$('bill-delete-wrap').style.display='none';}
   if(type==='txn'){currentTxnType=extra;$('txn-title').textContent=extra;$('t-id').value='';$('t-desc').value='';$('t-amount').value='';$('t-date').value=today();}
+  if(type==='asset'){$('asset-modal-title').textContent='Add Asset';$('a-id').value='';$('a-name').value='';$('a-cat').value='cash';$('a-value').value='';$('a-notes').value='';}
+  if(type==='target'){$('target-modal-title').textContent='Set Budget Target';$('tg-id').value='';$('tg-cat').value='Food';$('tg-amount').value='';}
+  if(type==='settings'){
+    const pin=localStorage.getItem(PIN_KEY);
+    $('pin-status-text').textContent=pin?'PIN is active. App locks on startup.':'No PIN set. Add a PIN to lock the app on startup.';
+    $('pin-setup-btn').textContent=pin?'🔒 Change PIN':'🔒 Set Up PIN';
+  }
   $('modal-'+type).classList.add('open');
   setTimeout(()=>{const f=$('modal-'+type).querySelector('input:not([type=hidden])');if(f)f.focus();},260);
 }
@@ -676,7 +1076,19 @@ function openEditBill(id){
   $('b-id').value=b.id;$('b-name').value=b.name;$('b-amount').value=b.amount;$('b-date').value=b.dueDate;$('b-recur').value=b.recurring;
   $('b-type').value=b.btype||'bill';$('b-balance').value=b.balance||'';$('b-apr').value=b.apr||'';
   toggleDebtFields();
+  // Show delete button only when editing existing bill
+  $('bill-delete-wrap').style.display='block';
   $('modal-bill').classList.add('open');
+}
+function deleteBillFromModal(){
+  const id=parseInt($('b-id').value);
+  const b=data.bills.find(x=>x.id===id);
+  if(!b)return;
+  if(!confirm('Remove "'+b.name+'" permanently? This cannot be undone.'))return;
+  data.bills=data.bills.filter(x=>x.id!==id);
+  closeModal('bill');
+  saveData();renderAll();
+  showToast('Removed.');
 }
 function openEditTxn(id){
   const t=data.transactions.find(x=>x.id===id);if(!t)return;
@@ -733,6 +1145,171 @@ function saveTxn(){
 // ── DATA HELPERS ─────────────────────────────────
 function deleteItem(key,id){data[key]=data[key].filter(i=>i.id!==id);saveData();renderAll();}
 function setBillStatus(id,status){const b=data.bills.find(b=>b.id===id);if(b){b.status=status;saveData();renderAll();}}
+
+function autoProcessScheduledBills(){
+  let changed=false;
+  data.bills.forEach(b=>{
+    if(b.status!=='Scheduled') return;
+    const d=daysUntil(b.dueDate);
+    if(d>=0) return;
+    // Past due and was scheduled - process payment
+    const amt=b.scheduledAmount||b.amount||0;
+    // If debt, reduce balance
+    if(b.btype==='debt'&&b.balance>0){
+      const monthlyRate=(b.apr||0)/100/12;
+      const interest=b.balance*monthlyRate;
+      const principal=Math.max(0,amt-interest);
+      b.balance=parseFloat(Math.max(0,b.balance-principal).toFixed(2));
+    }
+    // Log transaction
+    data.transactions.push({
+      id:Date.now()+Math.random(),
+      description:b.name+' payment (auto-processed)',
+      amount:parseFloat(amt.toFixed(2)),
+      type:b.btype==='debt'?'Debt Payment':'Bill Payment',
+      date:b.dueDate||today()
+    });
+    // Advance due date if recurring
+    if(b.dueDate&&b.recurring&&b.recurring!=='No'){
+      const dd=new Date(b.dueDate);
+      if(b.recurring==='Monthly') dd.setMonth(dd.getMonth()+1);
+      else if(b.recurring==='Weekly') dd.setDate(dd.getDate()+7);
+      else if(b.recurring==='Yearly') dd.setFullYear(dd.getFullYear()+1);
+      b.dueDate=dd.toISOString().split('T')[0];
+      b.status='Pending';
+      b.scheduledAmount=null;
+    } else {
+      b.status='Paid';
+    }
+    changed=true;
+  });
+  if(changed) saveData();
+}
+
+function revertToPending(id){
+  const b=data.bills.find(x=>x.id===id);if(!b)return;
+  if(!confirm('Cancel scheduled payment for '+b.name+'?')) return;
+  b.status='Pending';
+  b.scheduledAmount=null;
+  saveData();renderAll();
+}
+
+// Schedule regular (non-debt) bill
+let _scheduleBillId=null;
+function openScheduleBill(id){
+  const b=data.bills.find(x=>x.id===id);if(!b)return;
+  _scheduleBillId=id;
+  $('sb-name').textContent=b.name;
+  $('sb-due').textContent='Due: '+fmtDate(b.dueDate);
+  $('sb-min-val').textContent=usd(b.amount);
+  $('sb-custom').value='';
+  $('sb-custom').placeholder='e.g. '+b.amount;
+  // pre-select minimum
+  _sbAmount=b.amount;
+  $('sb-min-btn').style.outline='2px solid var(--accent)';
+  $('modal-schedulebill').classList.add('open');
+}
+let _sbAmount=0;
+function sbSelect(type){
+  const b=data.bills.find(x=>x.id===_scheduleBillId);if(!b)return;
+  if(type==='min'){
+    _sbAmount=b.amount;
+    $('sb-min-btn').style.outline='2px solid var(--accent)';
+    $('sb-custom').value='';
+  } else {
+    _sbAmount=parseFloat($('sb-custom').value)||0;
+    $('sb-min-btn').style.outline='none';
+  }
+}
+function confirmScheduleBill(){
+  const b=data.bills.find(x=>x.id===_scheduleBillId);if(!b)return;
+  const amt=parseFloat($('sb-custom').value)||_sbAmount||b.amount;
+  if(!amt||amt<=0){showToast('Enter a valid amount');return;}
+  b.status='Scheduled';
+  b.scheduledAmount=amt;
+  closeModal('schedulebill');
+  saveData();renderAll();
+  showToast('Payment scheduled - '+usd(amt));
+}
+
+// ── DEBT PAYMENT FLOW ────────────────────────────
+let _payDebtId=null;
+let _payDebtAmount=0;
+let _payDebtType='min';
+
+function openPayDebt(id){
+  const b=data.bills.find(x=>x.id===id);if(!b)return;
+  _payDebtId=id;
+  $('pd-name').textContent=b.name;
+  $('pd-balance').textContent=usd(b.balance||0);
+  $('pd-apr').textContent=pct(b.apr||0);
+  // Suggested = min payment (planner uses minimums; extra comes from actual payments)
+  const minAmt=b.amount||0;
+  const sugAmt=minAmt; // same as min since we removed the extra field
+  const fullAmt=b.balance||0;
+  $('pd-min-val').textContent=usd(minAmt);
+  $('pd-sug-val').textContent=usd(sugAmt);
+  $('pd-full-val').textContent=usd(fullAmt);
+  $('pd-custom').value='';
+  $('pd-breakdown').style.display='none';
+  // Hide suggested btn if same as min
+  $('pd-sug-btn').style.display='none';
+  // Default select min
+  _payDebtAmount=minAmt;
+  _payDebtType='min';
+  highlightPayBtn('pd-min-btn');
+  updatePayBreakdown(b,minAmt);
+  $('modal-paydebt').classList.add('open');
+}
+
+function selectPayAmount(type){
+  const b=data.bills.find(x=>x.id===_payDebtId);if(!b)return;
+  _payDebtType=type;
+  if(type==='min')      { _payDebtAmount=b.amount||0; highlightPayBtn('pd-min-btn'); }
+  else if(type==='suggested'){ _payDebtAmount=b.amount||0; highlightPayBtn('pd-sug-btn'); }
+  else if(type==='full'){ _payDebtAmount=b.balance||0; highlightPayBtn('pd-full-btn'); }
+  else if(type==='custom'){
+    _payDebtAmount=parseFloat($('pd-custom').value)||0;
+    highlightPayBtn(null);
+  }
+  updatePayBreakdown(b,_payDebtAmount);
+}
+
+function highlightPayBtn(activeId){
+  ['pd-min-btn','pd-sug-btn','pd-full-btn'].forEach(id=>{
+    const el=$(id);if(!el)return;
+    el.style.outline=id===activeId?'2px solid var(--accent)':'none';
+  });
+}
+
+function updatePayBreakdown(b,amount){
+  if(!amount||amount<=0){$('pd-breakdown').style.display='none';return;}
+  const monthlyRate=(b.apr||0)/100/12;
+  const interest=parseFloat(((b.balance||0)*monthlyRate).toFixed(2));
+  const principal=parseFloat(Math.min(amount-interest,b.balance||0).toFixed(2));
+  const newBal=parseFloat(Math.max(0,(b.balance||0)-principal).toFixed(2));
+  $('pd-interest-portion').textContent=usd(Math.max(0,interest));
+  $('pd-principal-portion').textContent=usd(Math.max(0,principal));
+  $('pd-new-balance').textContent=usd(newBal);
+  $('pd-breakdown').style.display='block';
+}
+
+function confirmDebtPayment(){
+  const b=data.bills.find(x=>x.id===_payDebtId);if(!b)return;
+  const amount=_payDebtType==='custom'
+    ? parseFloat($('pd-custom').value)||0
+    : _payDebtAmount;
+  if(!amount||amount<=0){showToast('Enter a valid amount');return;}
+
+  // Store scheduled amount on the bill - actual payment processes on/after due date
+  b.scheduledAmount=parseFloat(amount.toFixed(2));
+  b.status='Scheduled';
+
+  closeModal('paydebt');
+  saveData();
+  renderAll();
+  showToast('Payment of '+usd(amount)+' scheduled!');
+}
 function markCardUsed(id){
   const c=data.cards.find(c=>c.id===id);if(!c)return;
   const next=new Date();next.setDate(next.getDate()+c.reminderDays);
@@ -813,44 +1390,47 @@ function setMethod(m){
 }
 
 function calcDebtPlan(debts, extra){
-  // Clone debts with running balances
-  let items=debts.map(d=>({...d,bal:d.balance,monthlyRate:d.apr/100/12}));
+  // Clone debts preserving original min payments
+  let items=debts.map(d=>({...d,bal:d.balance,monthlyRate:d.apr/100/12,minPay:d.amount}));
   // Sort by method
   if(debtMethod==='avalanche') items.sort((a,b)=>b.apr-a.apr);
   else items.sort((a,b)=>a.bal-b.bal);
 
-  const totalMinPayment=items.reduce((s,d)=>s+d.amount,0);
+  const totalMinPayment=items.reduce((s,d)=>s+d.minPay,0);
   const totalMonthly=totalMinPayment+extra;
   let months=0;
   let totalInterestPaid=0;
   const MAX_MONTHS=600;
-  const schedule=[];// per-debt monthly schedule
   items.forEach(d=>d.sched=[]);
 
   while(items.some(d=>d.bal>0.01) && months<MAX_MONTHS){
     months++;
-    let remaining=extra;
-    // Pay interest + minimums on all
+
+    // Step 1: collect freed minimums from already-paid debts (cascade/roll effect)
+    const freedMinimums=items.filter(d=>d.bal<=0.01).reduce((s,d)=>s+d.minPay,0);
+    // Total available for focus debt = user extra + freed minimums
+    let available=extra+freedMinimums;
+
+    // Step 2: pay interest + minimum on each active debt
     items.forEach(d=>{
-      if(d.bal<=0)return;
-      const interest=d.bal*d.monthlyRate;
+      if(d.bal<=0.01){d.bal=0;return;}
+      const interest=parseFloat((d.bal*d.monthlyRate).toFixed(2));
       totalInterestPaid+=interest;
       d.bal+=interest;
-      const pay=Math.min(d.amount,d.bal);
-      d.bal-=pay;
-      d.sched.push({month:months,payment:pay,interest:parseFloat(interest.toFixed(2)),balance:parseFloat(Math.max(0,d.bal).toFixed(2))});
+      const pay=parseFloat(Math.min(d.minPay,d.bal).toFixed(2));
+      d.bal=parseFloat(Math.max(0,d.bal-pay).toFixed(2));
+      d.sched.push({month:months,payment:pay,interest,balance:d.bal});
     });
-    // Apply extra to focus debt (first non-zero)
+
+    // Step 3: apply available (extra + freed) to focus debt in priority order
     for(let d of items){
       if(d.bal<=0.01) continue;
-      const extra_pay=Math.min(remaining,d.bal);
-      d.bal-=extra_pay;
-      d.bal=Math.max(0,d.bal);
-      if(d.sched[d.sched.length-1]) d.sched[d.sched.length-1].payment+=extra_pay;
-      remaining-=extra_pay;
-      if(remaining<=0)break;
+      const bonus=parseFloat(Math.min(available,d.bal).toFixed(2));
+      d.bal=parseFloat(Math.max(0,d.bal-bonus).toFixed(2));
+      if(d.sched[d.sched.length-1]) d.sched[d.sched.length-1].payment=parseFloat((d.sched[d.sched.length-1].payment+bonus).toFixed(2));
+      available=parseFloat((available-bonus).toFixed(2));
+      if(available<=0) break;
     }
-    schedule.push(months);
   }
   return{items,months,totalInterestPaid,totalMonthly};
 }
@@ -865,24 +1445,83 @@ function renderDebt(){
   $('debt-no-data').style.display='none';
   $('debt-planner-content').style.display='block';
 
-  const extra=parseFloat($('extra-payment').value)||0;
-  const desc={avalanche:'Pays off highest APR debt first. Saves the most money in interest over time.',snowball:'Pays off smallest balance first. Builds momentum with quick wins.'};
+  const desc={
+    avalanche:'Sorted by highest APR first - focus payments on most expensive debt to minimize total interest paid.',
+    snowball:'Sorted by lowest balance first - knock out small debts quickly to build momentum and free up cash.'
+  };
   $('method-desc').textContent=desc[debtMethod];
 
+  // ── CASH FLOW CALCULATION ─────────────────────
+  const totalIncome   = data.income.reduce((s,i)=>s+i.amount,0);
+  const totalExpenses = data.expenses.reduce((s,e)=>s+e.amount,0);
+  const totalBillsPmt = data.bills.filter(b=>b.btype!=='debt').reduce((s,b)=>s+b.amount,0);
+  const totalDebtMins = debts.reduce((s,d)=>s+d.amount,0);
+  const manualExtra = 0;
+
+  // Available = income - expenses - non-debt bills - debt minimums + manual extra
+  const afterExpenses  = totalIncome - totalExpenses;
+  const afterBills     = afterExpenses - totalBillsPmt;
+  const afterMins      = afterBills - totalDebtMins;
+  const availableExtra = Math.max(0, afterMins) + manualExtra;
+  // Total monthly pool = minimums + available extra
+  const totalPool      = totalDebtMins + availableExtra;
+
+  // ── RENDER CASH BREAKDOWN ────────────────────
+  const cfRows=[
+    {label:'Total Income (all sources)', value:totalIncome, color:'var(--green)', sign:'+'},
+    {label:'Living Expenses', value:totalExpenses, color:'var(--red)', sign:'-'},
+    {label:'Regular Bills', value:totalBillsPmt, color:'var(--yellow)', sign:'-'},
+    {label:'Debt Minimums', value:totalDebtMins, color:'var(--muted)', sign:'-'},
+  ];
+  if($('cash-flow-rows')){
+    $('cash-flow-rows').innerHTML=cfRows.map(r=>`
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)">
+        <span style="font-size:13px;color:var(--muted)">${r.sign === '+' ? '' : ''}${r.label}</span>
+        <span style="font-size:13px;font-weight:600;color:${r.color}">${r.sign === '-' ? '-' : '+'}${usd(r.value)}</span>
+      </div>`).join('');
+    if($('cash-available')){
+      $('cash-available').textContent=usd(availableExtra);
+      $('cash-available').style.color=availableExtra>0?'var(--green)':'var(--red)';
+    }
+  }
+
+  // ── WARN IF INCOME CANT COVER MINIMUMS ───────
+  if(afterBills<totalDebtMins && $('cash-flow-rows')){
+    const shortfall=totalDebtMins-Math.max(0,afterBills);
+    $('cash-flow-rows').innerHTML+=`
+      <div style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:8px 12px;margin-top:8px;font-size:12px;color:var(--red)">
+        ⚠️ Income is ${usd(shortfall)} short of covering all minimums. Consider reducing expenses or increasing income.
+      </div>`;
+  }
+
+  const extra=availableExtra;
   const plan=calcDebtPlan(debts,extra);
   const totalDebt=debts.reduce((s,d)=>s+d.balance,0);
   const yrs=Math.floor(plan.months/12),mos=plan.months%12;
-  const timeStr=plan.months>=600?'500+ months':(yrs>0?`${yrs}y ${mos}m`:`${mos} months`);
 
   // Summary boxes
+  // Compare methods to show interest saved vs opposite method
+  const altMethod = debtMethod==='avalanche'?'snowball':'avalanche';
+  const origMethod = debtMethod;
+  debtMethod = altMethod;
+  const altPlan = calcDebtPlan(debts, extra);
+  debtMethod = origMethod;
+  const interestSaved = Math.max(0, altPlan.totalInterestPaid - plan.totalInterestPaid);
+  const timeStr2 = plan.months>=600?'500+ months':(yrs>0?`${yrs}y ${mos}m`:`${mos} months`);
+
   $('debt-summary').innerHTML=`
     <div class="summary-box"><div class="stat-label">Total Debt</div><div class="stat-value" style="color:var(--red);font-size:18px">${usd(totalDebt)}</div></div>
-    <div class="summary-box"><div class="stat-label">Payoff Time</div><div class="stat-value" style="color:var(--accent2);font-size:18px">${timeStr}</div></div>
+    <div class="summary-box"><div class="stat-label">Payoff Time</div><div class="stat-value" style="color:var(--accent2);font-size:18px">${timeStr2}</div></div>
     <div class="summary-box"><div class="stat-label">Total Interest</div><div class="stat-value" style="color:var(--yellow);font-size:18px">${usd(plan.totalInterestPaid)}</div></div>
-    <div class="summary-box"><div class="stat-label">Monthly Payment</div><div class="stat-value" style="color:var(--green);font-size:18px">${usd(plan.totalMonthly)}</div></div>`;
+    <div class="summary-box"><div class="stat-label">Monthly Pool</div><div class="stat-value" style="color:var(--green);font-size:18px">${usd(totalPool)}</div></div>
+    ${interestSaved>0?`<div class="summary-box" style="grid-column:1/-1;background:rgba(34,197,94,.07);border-color:rgba(34,197,94,.2)"><div class="stat-label" style="color:var(--green)">vs ${altMethod.charAt(0).toUpperCase()+altMethod.slice(1)} method</div><div style="font-size:14px;font-weight:700;color:var(--green)">Save ${usd(interestSaved)} in interest with ${debtMethod}</div></div>`:''}
+    `;
 
   // Debt cards
   const rankColors=['#22c55e','#6c63ff','#f59e0b','#ef4444','#06b6d4','#8b5cf6'];
+  const focusLabel=debtMethod==='avalanche'
+    ? (d,idx)=>idx===0?`<span style="font-size:10px;font-weight:700;color:#22c55e;margin-left:6px">HIGHEST APR</span>`:''
+    : (d,idx)=>idx===0?`<span style="font-size:10px;font-weight:700;color:#22c55e;margin-left:6px">LOWEST BALANCE</span>`:'';
   $('debt-list').innerHTML=plan.items.map((d,idx)=>{
     const rc=rankColors[idx%rankColors.length];
     const schedId='sched-'+d.id;
@@ -906,7 +1545,7 @@ function renderDebt(){
       <div style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap">
         <div class="debt-rank" style="background:${rc}22;color:${rc}">${idx+1}</div>
         <div style="flex:1;min-width:160px">
-          <div style="font-size:15px;font-weight:700;margin-bottom:4px">${d.name}</div>
+          <div style="font-size:15px;font-weight:700;margin-bottom:4px">${d.name}${focusLabel(d,idx)}</div>
           <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
             <span class="apr-badge">APR ${pct(d.apr)}</span>
             <span style="font-size:12px;color:var(--muted)">Min: ${usd(d.amount)}/mo</span>
@@ -948,6 +1587,12 @@ function renderAlerts(){
 }
 
 function renderDashboard(){
+  // Today's date display
+  const td_el=$('today-display');
+  if(td_el){
+    const now=new Date();
+    td_el.textContent=now.toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  }
   const ti=data.income.reduce((s,i)=>s+i.amount,0);
   const te=data.expenses.reduce((s,e)=>s+e.amount,0);
   const td=data.bills.filter(b=>b.btype==='debt').reduce((s,b)=>s+(b.balance||0),0);
@@ -958,7 +1603,7 @@ function renderDashboard(){
   $('d-balance').style.color=net>=0?'var(--green)':'var(--red)';
   const txns=[...data.transactions].reverse().slice(0,5);
   $('d-transactions').innerHTML=txns.length?txns.map(t=>`
-    <div class="row"><div><div class="row-label">${t.description}</div><div class="row-sub">${t.date} - ${t.type}</div></div>
+    <div class="row"><div><div class="row-label">${t.description}</div><div class="row-sub">${fmtDate(t.date)} - ${t.type}</div></div>
     <div style="color:var(--red);font-weight:600">-${usd(t.amount)}</div></div>`).join(''):'<div class="empty">No updates yet.</div>';
 }
 
@@ -968,7 +1613,7 @@ function renderBudget(){
   $('income-list').innerHTML=data.income.length?data.income.map(i=>`
     <div class="row"><div>
       <div class="row-label">${i.source} ${recurBadge(i.frequency)}</div>
-      <div class="row-sub">${[i.date,i.frequency!=='One-time'?i.frequency:'One-time'].filter(Boolean).join(' - ')}</div>
+      <div class="row-sub">${[fmtDate(i.date),i.frequency!=='One-time'?i.frequency:'One-time'].filter(Boolean).join(' - ')}</div>
     </div><div class="row-actions">
       <span style="color:var(--green);font-weight:600">${usd(i.amount)}</span>
       <button class="btn btn-secondary btn-sm" onclick="openEditIncome(${i.id})">✏️</button>
@@ -977,7 +1622,7 @@ function renderBudget(){
   $('expense-list').innerHTML=data.expenses.length?data.expenses.map(e=>`
     <div class="row"><div>
       <div class="row-label">${e.category} ${recurBadge(e.frequency)}</div>
-      <div class="row-sub">${[e.description,e.date].filter(Boolean).join(' - ')}</div>
+      <div class="row-sub">${[e.description,fmtDate(e.date)].filter(Boolean).join(' - ')}</div>
     </div><div class="row-actions">
       <span style="color:var(--yellow);font-weight:600">${usd(e.amount)}</span>
       <button class="btn btn-secondary btn-sm" onclick="openEditExpense(${e.id})">✏️</button>
@@ -986,35 +1631,60 @@ function renderBudget(){
 }
 
 function renderBills(){
+  autoProcessScheduledBills();
   if(!data.bills.length){$('bill-list').innerHTML='<div class="empty">No bills added yet.</div>';return;}
   const sorted=[...data.bills].sort((a,b)=>new Date(a.dueDate)-new Date(b.dueDate));
-  $('bill-list').innerHTML=sorted.map(b=>{
-    const d=daysUntil(b.dueDate),eff=b.status!=='Paid'&&d<0?'Overdue':b.status,sc=statusColor(eff);
+  let lastMonth='';
+  const rows=sorted.map(b=>{
+    // Month divider
+    const monthKey=b.dueDate?b.dueDate.slice(0,7):'';
+    let divider='';
+    if(monthKey&&monthKey!==lastMonth){
+      lastMonth=monthKey;
+      const label=b.dueDate?new Date(b.dueDate+'T12:00:00').toLocaleDateString('en-US',{month:'long',year:'numeric'}):'';
+      divider=`<div style="display:flex;align-items:center;gap:10px;margin:${sorted.indexOf(b)===0?'0':'18px'} 0 12px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--accent2);white-space:nowrap">${label}</div>
+        <div style="flex:1;height:1px;background:linear-gradient(to right,var(--border2),transparent)"></div>
+      </div>`;
+    }
+    const d=daysUntil(b.dueDate);
     const isDebt=b.btype==='debt';
-    return`<div class="card" style="margin-bottom:11px;border-color:${sc}44">
+    let eff=b.status;
+    if(eff!=='Paid'&&eff!=='Scheduled'&&d<0) eff='Overdue';
+    const sc=statusColor(eff);
+    const scheduledAmt=b.scheduledAmount?' - '+usd(b.scheduledAmount):'';
+    let actions='';
+    if(eff==='Paid'){
+      actions=`<span class="badge" style="background:${sc}22;color:${sc};font-size:12px">Paid${scheduledAmt}</span>`;
+    } else if(eff==='Scheduled'){
+      actions=`<span class="badge" style="background:${sc}22;color:${sc};font-size:12px">Scheduled${scheduledAmt}</span>
+        <button class="btn btn-sm" style="background:rgba(255,255,255,.06);color:var(--muted);font-size:11px" onclick="revertToPending(${b.id})">Cancel</button>`;
+    } else if(eff==='Overdue'){
+      actions=`<span class="badge" style="background:${sc}22;color:${sc};font-size:12px">Overdue</span>
+        <button class="btn btn-sm" style="background:rgba(239,68,68,.15);color:var(--red)" onclick="${isDebt?`openPayDebt(${b.id})`:`openScheduleBill(${b.id})`}">Schedule Now</button>`;
+    } else {
+      actions=`<span class="badge" style="background:${sc}22;color:${sc};font-size:12px">Pending</span>
+        <button class="btn btn-sm" style="background:rgba(59,130,246,.15);color:var(--blue)" onclick="${isDebt?`openPayDebt(${b.id})`:`openScheduleBill(${b.id})`}">Schedule</button>`;
+    }
+    return divider+`<div class="card" style="margin-bottom:11px;border-color:${sc}44">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px">
         <div>
           <div style="font-size:15px;font-weight:600;margin-bottom:3px">${b.name}
             ${isDebt?'<span style="background:rgba(239,68,68,.15);color:#ef4444;border-radius:5px;padding:1px 7px;font-size:10px;font-weight:700;margin-left:4px">DEBT</span>':''}
           </div>
-          <div style="font-size:12px;color:var(--muted)">Due: ${b.dueDate||'N/A'} - ${b.recurring}</div>
+          <div style="font-size:12px;color:var(--muted)">Due: ${fmtDate(b.dueDate)} - ${b.recurring}</div>
           ${isDebt&&b.balance?`<div style="font-size:12px;color:var(--muted)">Balance: ${usd(b.balance)} ${b.apr?'| APR: '+pct(b.apr):''}</div>`:''}
-          <div class="badge" style="background:${sc}22;color:${sc}">${eff}</div>
         </div>
         <div class="row-actions">
           <span style="font-family:var(--font-d);font-size:19px">${usd(b.amount)}</span>
-          <select onchange="setBillStatus(${b.id},this.value)" style="background:#1a1a2e;border:1px solid var(--border2);border-radius:8px;padding:6px 10px;color:var(--text);font-size:12px;-webkit-appearance:none">
-            <option${b.status==='Pending'?' selected':''}>Pending</option>
-            <option${b.status==='Scheduled'?' selected':''}>Scheduled</option>
-            <option${b.status==='Paid'?' selected':''}>Paid</option>
-          </select>
+          ${actions}
           <button class="btn btn-secondary btn-sm" onclick="openEditBill(${b.id})">✏️</button>
           ${b.dueDate?`<button class="btn btn-secondary btn-sm" onclick="addToCalendar('${b.name} Payment','${b.dueDate}','Min: ${usd(b.amount)}')">📅</button>`:''}
-          <button class="btn btn-danger btn-sm" onclick="deleteItem('bills',${b.id})">✕</button>
         </div>
       </div>
     </div>`;
-  }).join('');
+  });
+  $('bill-list').innerHTML=rows.join('');
 }
 
 function renderCards(){
@@ -1025,7 +1695,7 @@ function renderCards(){
       <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px">
         <div>
           <div style="font-size:15px;font-weight:600;margin-bottom:3px">${c.name}${c.last4?` <span style="color:var(--muted);font-size:13px">....${c.last4}</span>`:''}</div>
-          <div style="font-size:12px;color:var(--muted)">Next reminder: ${c.nextReminder}</div>
+          <div style="font-size:12px;color:var(--muted)">Next reminder: ${fmtDate(c.nextReminder)}</div>
           ${c.notes?`<div style="font-size:12px;color:#444;margin-top:2px">${c.notes}</div>`:''}
           ${urgent?`<div style="color:var(--accent2);font-size:12px;font-weight:700;margin-top:5px">Use this card soon!</div>`:''}
         </div>
@@ -1041,7 +1711,7 @@ function renderCards(){
 
 function renderTxns(){
   $('txn-list').innerHTML=data.transactions.length?[...data.transactions].reverse().map(t=>`
-    <div class="row"><div><div class="row-label">${t.description}</div><div class="row-sub">${t.date} - ${t.type}</div></div>
+    <div class="row"><div><div class="row-label">${t.description}</div><div class="row-sub">${fmtDate(t.date)} - ${t.type}</div></div>
     <div class="row-actions">
       <span style="color:var(--red);font-weight:600">-${usd(t.amount)}</span>
       <button class="btn btn-secondary btn-sm" onclick="openEditTxn(${t.id})">✏️</button>
@@ -1049,11 +1719,71 @@ function renderTxns(){
     </div></div>`).join(''):'<div class="empty">No updates logged yet.</div>';
 }
 
-function renderAll(){renderAlerts();renderDashboard();renderBudget();renderBills();renderDebt();renderCards();renderTxns();}
+function renderNetWorth(){
+  if(!$('asset-list'))return;
+  const assets=data.assets||[];
+  const totalAssets=assets.reduce((s,a)=>s+a.value,0);
+  const totalDebt=data.bills.filter(b=>b.btype==='debt').reduce((s,b)=>s+(b.balance||0),0);
+  const netWorth=totalAssets-totalDebt;
+  if($('nw-assets'))$('nw-assets').textContent=usd(totalAssets);
+  if($('nw-debts'))$('nw-debts').textContent=usd(totalDebt);
+  if($('nw-total')){$('nw-total').textContent=usd(netWorth);$('nw-total').style.color=netWorth>=0?'var(--green)':'var(--red)';}
+  const catIcon={cash:'💵',invest:'📈',property:'🏠',vehicle:'🚗'};
+  const catLabel={cash:'Savings / Cash',invest:'Investments',property:'Property',vehicle:'Vehicle'};
+  $('asset-list').innerHTML=assets.length?assets.map(a=>`
+    <div class="row"><div>
+      <div class="row-label">${catIcon[a.category]||'💼'} ${a.name}</div>
+      <div class="row-sub">${catLabel[a.category]||a.category}${a.notes?' - '+a.notes:''}</div>
+    </div><div class="row-actions">
+      <span style="color:var(--green);font-weight:600">${usd(a.value)}</span>
+      <button class="btn btn-secondary btn-sm" onclick="openEditAsset(${a.id})">✏️</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteItem('assets',${a.id})">✕</button>
+    </div></div>`).join(''):'<div class="empty">No assets added yet.</div>';
+}
+
+function renderInsights(){
+  // Chart
+  const months=parseInt($('chart-months')?$('chart-months').value:12)||12;
+  const pts=getMonthlyExpenses(months);
+  setTimeout(()=>drawChart(pts),50);
+
+  // Budget vs Actual
+  if(!$('budget-targets'))return;
+  const targets=data.targets||[];
+  if(!targets.length){$('budget-targets').innerHTML='<div class="empty">No targets set. Click "+ Set Target" to add one.</div>';return;}
+  const now=new Date();
+  $('budget-targets').innerHTML=targets.map(t=>{
+    const spent=data.expenses.filter(e=>{
+      if(e.category!==t.category||!e.date)return false;
+      const d=new Date(e.date);
+      return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth();
+    }).reduce((s,e)=>s+e.amount,0);
+    const pctVal=Math.min(100,Math.round(spent/t.amount*100));
+    const over=spent>t.amount;
+    const barColor=over?'var(--red)':pctVal>80?'var(--yellow)':'var(--green)';
+    return`<div style="margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <span style="font-size:13px;font-weight:600">${t.category}</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:12px;color:${over?'var(--red)':'var(--muted)'}">${usd(spent)} / ${usd(t.amount)}</span>
+          <button class="btn btn-danger btn-sm" style="padding:3px 7px;font-size:10px" onclick="deleteItem('targets',${t.id})">✕</button>
+        </div>
+      </div>
+      <div class="target-bar-bg"><div class="target-bar-fill" style="width:${pctVal}%;background:${barColor}"></div></div>
+      <div style="font-size:10px;color:${over?'var(--red)':'var(--muted)'};margin-top:3px">${over?'Over budget by '+usd(spent-t.amount):pctVal+'% used'}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderAll(){
+  renderAlerts();renderDashboard();renderBudget();renderBills();renderDebt();
+  renderNetWorth();renderInsights();renderCards();renderTxns();
+}
 
 // ── INIT ─────────────────────────────────────────
 toggleDebtFields();
 loadData();
+checkPinOnLoad();
 renderAll();
 </script>
 </body>
