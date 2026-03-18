@@ -1,2 +1,2 @@
-# financeOS
+# FinanceOS
 Finance Tracker
