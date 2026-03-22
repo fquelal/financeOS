@@ -24,8 +24,9 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-b);min-height
   background:var(--surface);border-right:1px solid var(--border);
   display:flex;flex-direction:column;
   position:fixed;top:0;left:0;bottom:0;z-index:60;
-  padding:0 0 20px;overflow-y:auto;
+  padding:0;overflow-y:auto;
 }
+#sidebar-footer{padding:8px 0;margin-top:auto;}
 .brand{
   font-family:var(--font-d);color:var(--accent);
   font-size:18px;padding:22px 16px 8px;
@@ -44,7 +45,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-b);min-height
 .nav-item:hover{background:rgba(108,99,255,.08);color:var(--accent2);}
 .nav-item.active{background:rgba(108,99,255,.15);color:var(--accent);}
 .nav-item .ni{font-size:16px;width:20px;text-align:center;flex-shrink:0;}
-.nav-settings{margin-top:auto;border-top:1px solid var(--border);padding-top:10px;}
+.nav-settings{border-top:1px solid var(--border);padding-top:10px;}
 
 /* ── MAIN CONTENT ── */
 #content{margin-left:var(--sidebar);flex:1;min-width:0;}
@@ -289,11 +290,129 @@ canvas{width:100%!important;}
 .txn-summary-item .ts-val{font-size:15px;font-weight:700;}
 .txn-summary-item 
 
+
+/* ── SIDEBAR FOOTER ── */
+#last-saved{display:flex;align-items:center;justify-content:center;gap:6px;}
+.ls-dot{width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0;display:block;}
+#last-saved .ls-dot.stale{background:var(--yellow);}
+/* Settings badge */
+.settings-badge{background:var(--yellow);color:#000;font-size:9px;font-weight:700;
+  border-radius:8px;padding:1px 5px;margin-left:4px;vertical-align:middle;line-height:14px;}
+
+
+/* ── LIGHT MODE ── */
+[data-theme="light"] {
+  --bg:#f0f0fa; --surface:#ffffff; --border:#ddddf0; --border2:#c8c8e8;
+  --text:#1a1a2e; --muted:#6b6b88;
+  --accent:#6c63ff; --accent2:#5550dd;
+  --green:#16a34a; --yellow:#d97706; --red:#dc2626; --blue:#2563eb;
+}
+[data-theme="light"] #sidebar{ background:#ffffff; border-right:1px solid #ddddf0; }
+[data-theme="light"] .card{ background:#ffffff; border-color:#ddddf0; }
+[data-theme="light"] .stat-card{ background:#f5f5ff; }
+[data-theme="light"] .modal{ background:#ffffff; }
+[data-theme="light"] .nav-item{ color:#6b6b88; }
+[data-theme="light"] .nav-item.active{ background:rgba(108,99,255,.12); color:#6c63ff; }
+[data-theme="light"] .nav-item:hover{ background:rgba(108,99,255,.08); }
+[data-theme="light"] .overlay{ background:rgba(0,0,0,.4); }
+[data-theme="light"] input,[data-theme="light"] select{
+  background:#f5f5ff; border-color:#c8c8e8; color:#1a1a2e;
+}
+[data-theme="light"] .quick-tile{ background:#f0f0fa; border-color:#ddddf0; }
+[data-theme="light"] .plan-toggle{ background:#f0f0fa; border-color:#ddddf0; }
+[data-theme="light"] .plan-toggle button{ color:#6b6b88; }
+[data-theme="light"] #mob-header,[data-theme="light"] #mobile-header{ background:#ffffff; border-color:#ddddf0; }
+[data-theme="light"] .section-label{ color:#6b6b88; }
+[data-theme="light"] .row{ border-color:#ededfa; }
+
+[data-theme="light"] #sidebar-footer{ border-color:#ddddf0; }
+[data-theme="light"] .sec-title{ color:#2a2a4a; }
+[data-theme="light"] .section-label{ color:#4a4a6a !important; }
+[data-theme="light"] .stat-label{ color:#4a4a6a; }
+[data-theme="light"] .row-label{ color:#1a1a2e; }
+[data-theme="light"] .row-sub{ color:#6b6b88; }
+[data-theme="light"] .sort-btn{ color:#4a4a6a; background:rgba(0,0,0,.06); }
+[data-theme="light"] .sort-btn.active{ background:var(--accent); color:#fff; }
+[data-theme="light"] .empty-state .es-title{ color:#2a2a4a; }
+[data-theme="light"] .empty-state .es-desc{ color:#6b6b88; }
+
+
+/* ── ONBOARDING ── */
+#onboarding-overlay{position:fixed;inset:0;background:rgba(8,8,18,.92);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;}
+#onboarding-overlay.hidden{display:none;}
+.ob-card{background:var(--surface);border:1px solid var(--border2);border-radius:20px;padding:32px;max-width:420px;width:100%;text-align:center;transition:border-color .3s,box-shadow .3s;}
+.ob-steps{display:flex;justify-content:center;gap:8px;margin-bottom:28px;}
+.ob-step-dot{width:8px;height:8px;border-radius:50%;background:var(--border2);transition:background .3s;}
+.ob-step-dot.active{background:var(--accent);}
+.ob-icon{font-size:52px;margin-bottom:16px;}
+.ob-title{font-size:20px;font-weight:700;color:var(--text);margin-bottom:8px;}
+.ob-desc{font-size:14px;color:var(--muted);line-height:1.6;margin-bottom:24px;}
+.ob-btns{display:flex;gap:10px;justify-content:center;}
+.ob-skip{background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;font-family:var(--font-b);text-decoration:underline;}
+
+/* ── AUTO-PROCESS NOTIFICATION ── */
+#autoprocess-banner{display:none;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.25);border-radius:12px;padding:10px 14px;margin-bottom:16px;font-size:13px;color:var(--green);display:none;align-items:center;gap:10px;}
+#autoprocess-banner .apb-close{margin-left:auto;background:none;border:none;color:var(--green);cursor:pointer;font-size:16px;line-height:1;}
+
+/* ── UNDO TOAST ── */
+#undo-toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:12px;font-size:13px;color:var(--text);z-index:150;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;white-space:nowrap;box-shadow:0 8px 32px rgba(0,0,0,.3);}
+#undo-toast.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto;}
+#undo-toast .undo-btn{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font-b);}
+#undo-toast .undo-progress{position:absolute;bottom:0;left:0;height:3px;background:var(--accent);border-radius:0 0 12px 12px;transition:width linear;}
+
+/* ── BILL CONFIRMATION ANIMATION ── */
+@keyframes checkPop{0%{transform:scale(0);opacity:0}60%{transform:scale(1.3)}100%{transform:scale(1);opacity:1}}
+.bill-check{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:var(--green);animation:checkPop .35s ease forwards;}
+.bill-check svg{width:13px;height:13px;fill:none;stroke:#fff;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;}
+
+/* ── INCOME PROJECTION ── */
+.proj-toggle{display:flex;gap:6px;margin-bottom:12px;}
+.proj-btn{background:rgba(255,255,255,.06);border:none;border-radius:8px;padding:5px 12px;font-size:11px;font-weight:600;color:var(--muted);cursor:pointer;font-family:var(--font-b);transition:all .15s;}
+.proj-btn.active{background:var(--accent);color:#fff;}
+.proj-bar{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);}
+.proj-bar:last-child{border-bottom:none;}
+
+
+[data-theme="light"] .ob-card{ background:#fff; border-color:#ddddf0; }
+[data-theme="light"] #undo-toast{ background:#fff; border-color:#ddddf0; color:#1a1a2e; }
+[data-theme="light"] #autoprocess-banner{ background:rgba(22,163,74,.08); border-color:rgba(22,163,74,.2); }
+[data-theme="light"] .proj-btn{ background:rgba(0,0,0,.06); color:#4a4a6a; }
+[data-theme="light"] .proj-btn.active{ background:var(--accent); color:#fff; }
+[data-theme="light"] .drill-panel{ border-color:#ddddf0; }
+[data-theme="light"] .drill-row{ border-color:#ededfa; }
+[data-theme="light"] .dr-desc{ color:#1a1a2e; }
+[data-theme="light"] .dr-sub{ color:#6b6b88; }
+[data-theme="light"] .month-nav{ background:#fff; border-color:#ddddf0; }
+[data-theme="light"] .month-nav .mn-label{ color:#1a1a2e; }
+[data-theme="light"] .txn-summary{ background:#fff; border-color:#ddddf0; }
+[data-theme="light"] .snap-item{ background:rgba(0,0,0,.03); }
+[data-theme="light"] .snap-item .si-label{ color:#6b6b88; }
+[data-theme="light"] .debt-progress-bar{ background:rgba(0,0,0,.06); }
+[data-theme="light"] .search-bar input{ background:#f5f5ff; border-color:#c8c8e8; color:#1a1a2e; }
+[data-theme="light"] .swipe-wrap .card,[data-theme="light"] .swipe-wrap .row{ background:#fff; }
+[data-theme="light"] .drill-toggle{ color:#6b6b88; }
+[data-theme="light"] .empty-state{ color:#1a1a2e; }
+[data-theme="light"] #last-saved span#ls-text{ color:#aaaacc !important; }
+
 </style>
 </head>
 <body>
 
 <div id="toast"></div>
+<div id="undo-toast"><span id="undo-msg">Deleted</span><button class="undo-btn" onclick="undoDelete()">Undo</button><div class="undo-progress" id="undo-progress"></div></div>
+<div id="onboarding-overlay" class="hidden">
+  <div class="ob-card">
+    <div class="ob-steps"><div class="ob-step-dot active" id="ob-dot-0"></div><div class="ob-step-dot" id="ob-dot-1"></div><div class="ob-step-dot" id="ob-dot-2"></div><div class="ob-step-dot" id="ob-dot-3"></div><div class="ob-step-dot" id="ob-dot-4"></div><div class="ob-step-dot" id="ob-dot-5"></div></div>
+    <div class="ob-icon" id="ob-icon">👋</div>
+    <div class="ob-title" id="ob-title">Welcome to FinanceOS</div>
+    <div class="ob-desc" id="ob-desc">Your personal finance app. Everything stays private on your device - nothing is ever sent anywhere. Let's get you set up in 3 quick steps.</div>
+    <div class="ob-btns">
+      <button class="ob-skip" onclick="skipOnboarding()">Skip</button>
+      <button class="btn btn-secondary" onclick="obDemo()" id="ob-demo-btn" style="padding:10px 18px;display:none">🎭 Demo Mode</button>
+      <button class="btn btn-primary" onclick="obNext()" id="ob-next-btn" style="padding:10px 28px">Get Started</button>
+    </div>
+  </div>
+</div>
 <button id="hamburger" onclick="toggleSidebar()">&#9776;</button>
 <div id="overlay-bg" onclick="closeSidebar()"></div>
 
@@ -334,6 +453,9 @@ canvas{width:100%!important;}
   <button class="nav-item" onclick="show('insights',this)"><span class="ni">📈</span><span data-i18n="Insights">Insights</span><span id="insights-badge" class="nav-badge" style="display:none"></span></button>
   <button class="nav-item" onclick="show('cards',this)"><span class="ni">💳</span><span data-i18n="Cards">Cards</span></button>
   <button class="nav-item" onclick="show('quick',this)"><span class="ni">⚡</span><span data-i18n="Quick Update">Quick Update</span></button>
+  <div id="sidebar-footer">
+    <div id="last-saved" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:8px 0;"><span id="ls-dot" style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0;"></span><span id="ls-text" style="font-size:11px;color:#444460;font-weight:400;font-family:-apple-system,sans-serif;">Not saved yet</span></div>
+  </div>
   <div class="nav-settings">
     <button class="nav-item" onclick="lockApp()" id="lock-nav-btn" style="display:none"><span class="ni">🔒</span><span data-i18n="Lock App">Lock App</span></button>
     <button class="nav-item" onclick="openModal('settings')"><span class="ni">⚙️</span><span data-i18n="Settings">Settings</span></button>
@@ -355,6 +477,7 @@ canvas{width:100%!important;}
         <h2 class="sec-title" data-i18n="Financial Overview">Financial Overview</h2>
         <div id="today-display" style="font-size:15px;color:var(--muted);font-weight:600"></div>
       </div>
+      <div id="autoprocess-banner"><span id="autoprocess-msg"></span><button class="apb-close" onclick="dismissAutoProcess()">✕</button></div>
       <div id="dash-alerts"></div>
       <div class="card-grid">
         <div class="stat-card"><div class="stat-label" data-i18n="Total Income">Total Income</div><div class="stat-value" id="d-income" style="color:var(--green)">$0.00</div></div>
@@ -379,7 +502,7 @@ canvas{width:100%!important;}
 
     <!-- BUDGET -->
     <div id="budget" class="section">
-      <!-- Summary bar -->
+      <h2 class="sec-title" data-i18n="Cash Flow">Cash Flow</h2>
       <div id="budget-alerts"></div>
       <div class="card-grid" style="margin-bottom:18px">
         <div class="stat-card"><div class="stat-label" data-i18n="Money In">Money In</div><div class="stat-value" id="cf-in" style="color:var(--green)">$0.00</div></div>
@@ -556,6 +679,17 @@ canvas{width:100%!important;}
         </div>
         <div class="snap-grid" id="snap-grid"></div>
         <div id="savings-rate-wrap" style="margin-top:12px"></div>
+        <div id="projection-wrap" style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+            <div style="font-size:12px;font-weight:700;color:var(--text)">📈 Income Projection</div>
+            <div class="proj-toggle">
+              <button class="proj-btn active" onclick="setProjWindow(3,this)">3mo</button>
+              <button class="proj-btn" onclick="setProjWindow(6,this)">6mo</button>
+              <button class="proj-btn" onclick="setProjWindow('year',this)">Year</button>
+            </div>
+          </div>
+          <div id="proj-content"></div>
+        </div>
       </div>
     </div>
 
@@ -642,6 +776,15 @@ canvas{width:100%!important;}
   <div class="modal">
     <div class="modal-header"><span class="modal-title">⚙️ Settings</span><button class="close-btn" onclick="closeModal('settings')">✕</button></div>
 
+    <!-- Theme -->
+    <div style="background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px">
+      <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px">🎨 <span data-i18n="Theme">Theme</span></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+        <button id="theme-dark" class="btn btn-full" onclick="setTheme('dark')" style="padding:10px;font-size:13px">🌙 Dark</button>
+        <button id="theme-light" class="btn btn-full" onclick="setTheme('light')" style="padding:10px;font-size:13px">☀️ Light</button>
+        <button id="theme-auto" class="btn btn-full" onclick="setTheme('auto')" style="padding:10px;font-size:13px">⚙️ Auto</button>
+      </div>
+    </div>
     <!-- Language -->
     <div style="background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px">
       <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px">🌐 <span data-i18n="Language">Language</span></div>
@@ -1022,6 +1165,10 @@ let currentTxnType='Withdrawal';
 let debtMethod='avalanche';
 let appLang='en';
 const LANG_KEY='financeOS_lang';
+const BACKUP_KEY='financeOS_lastBackup';
+const THEME_KEY='financeOS_theme';
+let appTheme='auto';
+const SAVE_TS_KEY='financeOS_lastSaved';
 let insightsTab='categories';
 let txnFilter='All';
 let billSort='date';
@@ -1039,6 +1186,12 @@ const pct=n=>(n||0).toFixed(2)+'%';
 // ── TRANSLATIONS ─────────────────────────────────
 const TRANSLATIONS={
   es:{
+    'Theme':'Tema',
+    'Restored!':'Restaurado!',
+    'Income Projection':'Proyeccion de Ingresos',
+    'Dark':'Oscuro',
+    'Light':'Claro',
+    'Auto':'Auto',
     'Cash Flow':'Flujo de Caja',
     'Money In':'Dinero Entrante',
     'Money Out':'Dinero Saliente',
@@ -1157,6 +1310,10 @@ const TRANSLATIONS={
     'Overall Payoff Progress':'Progreso de Pago',
     'This month vs last month':'Este mes vs mes anterior',
     'Reset All Data':'Restablecer Datos',
+    'Backup':'Respaldo',
+    'Saved just now':'Guardado ahora',
+    'Not saved yet':'Sin guardar',
+    'Backup downloaded!':'Respaldo descargado!',
     'Set Up PIN':'Configurar PIN',
     'Change PIN':'Cambiar PIN',
     'PIN Lock':'Bloqueo PIN',
@@ -1314,6 +1471,10 @@ const TRANSLATIONS={
     'Load sample data to explore all features.':'Carga datos de muestra para explorar todas las funciones.',
     '🎭 Load Demo Data':'🎭 Cargar Demo',
     'Reset All Data':'Restablecer Datos',
+    'Backup':'Respaldo',
+    'Saved just now':'Guardado ahora',
+    'Not saved yet':'Sin guardar',
+    'Backup downloaded!':'Respaldo descargado!',
     'This will permanently delete all your data.':'Esto eliminara permanentemente todos tus datos.',
     'Loads realistic sample data across all sections - income, expenses, bills, debts, cards, and transactions. Great for testing or showcasing the app.':'Carga datos de muestra en todas las secciones. Ideal para explorar o demostrar la app.',
     'Export your data as a .json file saved to your device. Import it any time to restore - even after app updates or on a new device.':'Exporta tus datos como archivo .json. Importalos en cualquier momento para restaurar.',
@@ -1344,6 +1505,14 @@ function setLanguage(lang){
   localStorage.setItem(LANG_KEY,lang);
   applyTranslations();
   renderAll();
+  // Seed timestamp if data exists but no timestamp recorded yet
+  if(!localStorage.getItem(SAVE_TS_KEY)&&(data.income.length||data.bills.length||data.transactions.length)){
+    localStorage.setItem(SAVE_TS_KEY,Date.now().toString());
+  }
+  updateLastSavedUI();
+  checkBackupReminder();
+  showOnboarding();
+  showOnboarding();
 }
 function applyTranslations(){
   document.querySelectorAll('[data-i18n]').forEach(el=>{
@@ -1381,7 +1550,13 @@ function closeSidebar(){
 
 // ── PERSISTENCE ──────────────────────────────────
 function saveData(){
-  try{localStorage.setItem(STORAGE_KEY,JSON.stringify(data));showToast();}
+  try{
+    localStorage.setItem(STORAGE_KEY,JSON.stringify(data));
+    localStorage.setItem(SAVE_TS_KEY,Date.now().toString());
+    showToast();
+    updateLastSavedUI();
+    checkBackupReminder();
+  }
   catch(e){console.warn(e);}
 }
 function loadData(){
@@ -1417,16 +1592,18 @@ function getEffectiveIncome(i){
   return(i.actualAmount&&i.actualMonth===today().slice(0,7))?i.actualAmount:i.amount;
 }
 function showToast(msg){
-  const t=$('toast');t.textContent=msg||appLang==='es'?'Guardado':'Saved';t.classList.add('show');
+  const t=$('toast');t.textContent=msg||(appLang==='es'?'Guardado':'Saved');t.classList.add('show');
   clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2200);
 }
 function confirmReset(){
   if(confirm('Reset ALL data? Cannot be undone.')){
     data={income:[],expenses:[],bills:[],cards:[],transactions:[]};
     localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(SAVE_TS_KEY);
+    localStorage.removeItem(ONBOARD_KEY);
     closeModal('settings');
   const si=$('txn-search');if(si)si.value='';
-  const sc=$('txn-clear');if(sc)sc.style.display='none';renderAll();
+  const sc=$('txn-clear');if(sc)sc.style.display='none';renderAll();updateLastSavedUI();showOnboarding();
     alert('All data has been reset.');
   }
 }
@@ -1441,6 +1618,7 @@ function exportData(){
     a.click();
     URL.revokeObjectURL(url);
     showToast(t('Backup downloaded!'));
+    markBackupDone();
   }catch(e){alert('Export failed: '+e.message);}
 }
 function importData(){
@@ -1470,8 +1648,8 @@ function importData(){
   input.click();
 }
 
-function loadDemoData(){
-  if(!confirm('Load demo data? This will replace your current data with realistic sample data.\n\nTip: Export a backup first if you have real data to keep.')) return;
+function loadDemoData(skipConfirm){
+  if(!skipConfirm&&!confirm('Load demo data? This will replace your current data with realistic sample data.\n\nTip: Export a backup first if you have real data to keep.')) return;
   const now=new Date();
   const dt=days=>{ const d=new Date(now); d.setDate(d.getDate()+days); return d.toISOString().split('T')[0]; };
   const ago=days=>dt(-days);
@@ -1573,6 +1751,7 @@ function loadDemoData(){
   }
   updateOriginalBalances();
   saveData();
+  localStorage.setItem(SAVE_TS_KEY,Date.now().toString());
   // Reset UI state
   txnFilter='All';
   billSort='date';
@@ -1966,6 +2145,7 @@ function openModal(type,extra){
       if(btn) btn.style.background=appLang===l?'var(--accent)':'rgba(255,255,255,.06)';
       if(btn) btn.style.color=appLang===l?'#fff':'var(--text)';
     });
+    updateThemeButtons();
   }
   $('modal-'+type).classList.add('open');
   setTimeout(()=>{const f=$('modal-'+type).querySelector('input:not([type=hidden])');if(f)f.focus();},260);
@@ -2226,7 +2406,6 @@ function emptyState(icon,title,desc,btnLabel,btnAction){
 }
 
 // ── DATA HELPERS ─────────────────────────────────
-function deleteItem(key,id){data[key]=data[key].filter(i=>i.id!==id);saveData();renderAll();}
 
 function autoProcessScheduledBills(){
   let changed=false;
@@ -3037,7 +3216,7 @@ function renderBudget(){
 }
 
 function renderBills(){
-  autoProcessScheduledBills();
+  autoProcessScheduledBillsWithNotify();
   if(!data.bills.length){
     $('bill-list').innerHTML=emptyState('📋','No bills yet','Add your recurring bills, credit cards, and loans to track due dates and payments.',"+ Add a Bill","openModal('bill')");
     return;
@@ -3066,7 +3245,7 @@ function renderBills(){
     const scheduledAmt=b.scheduledAmount?' - '+usd(b.scheduledAmount):'';
     let actions='';
     if(eff==='Paid'){
-      actions=`<span class="badge" style="background:${sc}22;color:${sc};font-size:12px">${t('Paid')}${scheduledAmt}</span>`;
+      actions=`<span class="badge" style="background:${sc}22;color:${sc};font-size:12px;display:inline-flex;align-items:center;gap:5px"><span class="bill-check">${checkmarkSVG()}</span>${t('Paid')}${scheduledAmt}</span>`;
     } else if(eff==='Scheduled'){
       actions=`<span class="badge" style="background:${sc}22;color:${sc};font-size:12px">${t('Scheduled')}${scheduledAmt}</span>
         <button class="btn btn-sm" style="background:rgba(255,255,255,.06);color:var(--muted);font-size:11px" onclick="revertToPending(${b.id})">Cancel</button>`;
@@ -3493,6 +3672,7 @@ function renderInsights(){
 
 // ── MONTHLY SNAPSHOT ─────────────────────────────────────────
 function renderSnapshot(){
+  renderProjection();
   const now = new Date();
   const yr = now.getFullYear(), mo = now.getMonth();
   const prevYr = mo === 0 ? yr - 1 : yr;
@@ -3670,20 +3850,332 @@ function updateBillsBadge(){
   badge.style.display=overdue>0?'inline-block':'none';
 }
 
+
+// ── LAST SAVED TIMESTAMP ─────────────────────────────────────
+function updateLastSavedUI(){
+  const ts=localStorage.getItem(SAVE_TS_KEY);
+  const dot=$('ls-dot');
+  const txt=$('ls-text');
+  if(!dot||!txt) return;
+  if(!ts){
+    txt.textContent='Not saved yet';
+    dot.style.background='var(--yellow)';
+    return;
+  }
+  dot.style.background='var(--green)';
+  const saved=new Date(parseInt(ts));
+  const now=new Date();
+  const diffMs=now-saved;
+  const diffMins=Math.floor(diffMs/60000);
+  const diffHrs=Math.floor(diffMs/3600000);
+  const diffDays=Math.floor(diffMs/86400000);
+  let label='';
+  if(diffMins<1) label='Saved just now';
+  else if(diffMins<60) label=`Saved ${diffMins}m ago`;
+  else if(diffHrs<24) label=`Saved ${diffHrs}h ago`;
+  else label=`Saved ${diffDays}d ago`;
+  txt.textContent=label;
+  // Dot goes yellow if >1 hour since save (unusual)
+  if(dot) dot.classList.toggle('stale', diffHrs>=1);
+}
+
+// ── BACKUP REMINDER ───────────────────────────────────────────
+function checkBackupReminder(){
+  const badge=$('settings-badge');
+  if(!badge) return;
+  // Don't show if no real data
+  const hasData=data.income.length||data.expenses.length||data.bills.length||data.transactions.length;
+  if(!hasData){ badge.style.display='none'; return; }
+  const last=localStorage.getItem(BACKUP_KEY);
+  if(!last){
+    // Never backed up - show after 1st save
+    badge.style.display='inline-block';
+    return;
+  }
+  const daysSince=Math.floor((Date.now()-parseInt(last))/86400000);
+  badge.style.display=daysSince>=7?'inline-block':'none';
+}
+
+function markBackupDone(){
+  localStorage.setItem(BACKUP_KEY, Date.now().toString());
+  checkBackupReminder();
+}
+
+
+
+// ── THEME SYSTEM ─────────────────────────────────────────────
+function applyTheme(theme){
+  const root=document.documentElement;
+  if(theme==='light'){
+    root.setAttribute('data-theme','light');
+  } else if(theme==='dark'){
+    root.setAttribute('data-theme','dark');
+  } else {
+    // Auto - detect browser preference
+    const prefersDark=window.matchMedia('(prefers-color-scheme: dark)').matches;
+    root.setAttribute('data-theme', prefersDark?'dark':'light');
+  }
+}
+
+function setTheme(theme){
+  appTheme=theme;
+  localStorage.setItem(THEME_KEY,theme);
+  applyTheme(theme);
+  updateThemeButtons();
+}
+
+function updateThemeButtons(){
+  ['dark','light','auto'].forEach(t=>{
+    const btn=$('theme-'+t);
+    if(!btn) return;
+    btn.style.background=appTheme===t?'var(--accent)':'rgba(255,255,255,.06)';
+    btn.style.color=appTheme===t?'#fff':'var(--text)';
+  });
+}
+
+function loadTheme(){
+  const saved=localStorage.getItem(THEME_KEY)||'auto';
+  appTheme=saved;
+  applyTheme(saved);
+  // Listen for system preference changes when in Auto mode
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{
+    if(appTheme==='auto') applyTheme('auto');
+  });
+}
+
+
+
+// ── ONBOARDING ───────────────────────────────────────────────
+const ONBOARD_KEY='financeOS_onboarded';
+const OB_STEPS_EN=[
+  {icon:'👋',title:'Welcome to FinanceOS',desc:"Your personal finance app. Everything stays private on your device - nothing is ever sent anywhere. Let's get you set up in 3 quick steps.",btn:'Get Started',color:null},
+  {icon:'🏦',title:'Add Your Accounts',desc:'Start by adding your checking, savings, and cash accounts with their current balances. This keeps your finances accurate as you track spending.',btn:'Next',color:null},
+  {icon:'💰',title:'Set Up Cash Flow',desc:"Add your income sources and monthly expenses in Cash Flow. Then add bills for rent, subscriptions, and loan payments.",btn:"See What's Inside",color:null},
+  {icon:'📉',title:'Debt Planner',desc:"Choose Avalanche or Snowball strategy and see exactly when you'll be debt-free. The planner auto-calculates your available cash from your real income and expenses.",btn:'Next',color:'#ef4444'},
+  {icon:'📈',title:'Insights',desc:'Track spending trends with charts, set budget targets per category, and see your monthly snapshot with savings rate and income projections.',btn:'Next',color:'#6c63ff'},
+  {icon:'⚡',title:'Quick Update',desc:'Log cash withdrawals and purchases in seconds. Swipe left on any transaction to delete. Search and browse by month to keep things organized.',btn:"Let's Get Started!",color:'#f59e0b'},
+];
+const OB_STEPS_ES=[
+  {icon:'👋',title:'Bienvenido a FinanceOS',desc:"Tu app de finanzas personales. Todo se queda en tu dispositivo - nada se envia a ningun servidor. Te guiamos en 3 pasos rapidos.",btn:'Comenzar',color:null},
+  {icon:'🏦',title:'Agrega tus Cuentas',desc:'Comienza agregando tus cuentas de cheques, ahorros y efectivo con sus saldos actuales. Esto mantiene tus finanzas precisas.',btn:'Siguiente',color:null},
+  {icon:'💰',title:'Configura tu Flujo',desc:"Agrega tus fuentes de ingresos y gastos mensuales. Luego agrega facturas para renta, suscripciones y prestamos.",btn:"Ver Funciones",color:null},
+  {icon:'📉',title:'Planificador de Deudas',desc:"Elige la estrategia Avalancha o Bola de Nieve y mira exactamente cuando quedas libre de deudas.",btn:'Siguiente',color:'#ef4444'},
+  {icon:'📈',title:'Perspectivas',desc:'Rastrea tendencias de gastos con graficas, establece presupuestos por categoria y ve tu resumen mensual con proyecciones.',btn:'Siguiente',color:'#6c63ff'},
+  {icon:'⚡',title:'Actualizacion Rapida',desc:'Registra retiros y compras en segundos. Desliza para eliminar. Busca y navega por mes para mantenerte organizado.',btn:"A Comenzar!",color:'#f59e0b'},
+];
+const OB_STEPS=()=>appLang==='es'?OB_STEPS_ES:OB_STEPS_EN;
+let obStep=0;
+
+function showOnboarding(){
+  if(localStorage.getItem(ONBOARD_KEY)) return;
+  const overlay=$('onboarding-overlay');
+  if(overlay) overlay.classList.remove('hidden');
+  obStep=0;
+  renderObStep();
+}
+
+function renderObStep(){
+  const s=OB_STEPS()[obStep];
+  const icon=$('ob-icon'),title=$('ob-title'),desc=$('ob-desc'),btn=$('ob-next-btn');
+  const card=document.querySelector('.ob-card');
+  if(icon) icon.textContent=s.icon;
+  if(title) title.textContent=s.title;
+  if(desc) desc.textContent=s.desc;
+  if(btn) btn.textContent=s.btn;
+  // Colored border for feature highlight steps
+  if(card){
+    card.style.borderColor=s.color||'var(--border2)';
+    card.style.boxShadow=s.color?'0 0 32px '+s.color+'33':'none';
+  }
+  // Show demo button only on last step
+  const demoBtn=$('ob-demo-btn');
+  if(demoBtn) demoBtn.style.display=(obStep===OB_STEPS().length-1)?'inline-flex':'none';
+  // Update dots
+  OB_STEPS().forEach((_,i)=>{
+    const dot=$('ob-dot-'+i);
+    if(dot) dot.classList.toggle('active',i===obStep);
+  });
+}
+
+function obNext(){
+  obStep++;
+  if(obStep>=OB_STEPS().length){
+    skipOnboarding();
+    show('networth',document.querySelector('.nav-item:nth-child(5)'));
+    setTimeout(()=>openModal('account'),400);
+    return;
+  }
+  renderObStep();
+}
+
+function obDemo(){
+  skipOnboarding();
+  loadDemoData(true);
+}
+
+function skipOnboarding(){
+  localStorage.setItem(ONBOARD_KEY,'1');
+  const overlay=$('onboarding-overlay');
+  if(overlay) overlay.classList.add('hidden');
+}
+
+// ── AUTO-PROCESS NOTIFICATION ────────────────────────────────
+let _autoProcessCount=0;
+
+function autoProcessScheduledBillsWithNotify(){
+  const before=data.bills.filter(b=>b.status==='Scheduled').length;
+  autoProcessScheduledBills();
+  const after=data.bills.filter(b=>b.status==='Scheduled'||b.status==='Paid').length;
+  // Count how many were processed
+  const processed=data.transactions.filter(tx=>{
+    if(!tx.date) return false;
+    return tx.date===today()&&(tx.description||'').includes('auto-processed');
+  }).length;
+  if(processed>0){
+    _autoProcessCount=processed;
+    const banner=$('autoprocess-banner');
+    const msg=$('autoprocess-msg');
+    if(banner&&msg){
+      msg.textContent='✅ '+processed+' payment'+(processed>1?'s':'')+' auto-processed today. Tap Bills to review.';
+      banner.style.display='flex';
+    }
+  }
+}
+
+function dismissAutoProcess(){
+  const banner=$('autoprocess-banner');
+  if(banner) banner.style.display='none';
+}
+
+// ── UNDO DELETE ───────────────────────────────────────────────
+let _undoTimer=null;
+let _undoState=null;
+
+function deleteItem(key,id){
+  const item=data[key].find(i=>i.id===id);
+  if(!item) return;
+  // Store undo state
+  _undoState={key,id,item,index:data[key].findIndex(i=>i.id===id)};
+  data[key]=data[key].filter(i=>i.id!==id);
+  saveData();renderAll();
+  showUndoToast(key);
+}
+
+function showUndoToast(key){
+  const labels={income:'Income entry',expenses:'Expense',bills:'Bill',transactions:'Transaction',assets:'Asset',targets:'Target',accounts:'Account',cards:'Card'};
+  const toast=$('undo-toast');
+  const msg=$('undo-msg');
+  const bar=$('undo-progress');
+  if(!toast) return;
+  if(msg) msg.textContent=(labels[key]||'Item')+' deleted';
+  toast.classList.add('show');
+  // Progress bar animation
+  if(bar){
+    bar.style.transition='none';
+    bar.style.width='100%';
+    setTimeout(()=>{bar.style.transition='width 4.5s linear';bar.style.width='0%';},50);
+  }
+  clearTimeout(_undoTimer);
+  _undoTimer=setTimeout(()=>{
+    toast.classList.remove('show');
+    _undoState=null;
+  },5000);
+}
+
+function undoDelete(){
+  if(!_undoState) return;
+  const{key,item,index}=_undoState;
+  data[key].splice(index,0,item);
+  saveData();renderAll();
+  _undoState=null;
+  clearTimeout(_undoTimer);
+  const toast=$('undo-toast');
+  if(toast) toast.classList.remove('show');
+  showToast('Restored!');
+}
+
+// ── BILL PAID ANIMATION ───────────────────────────────────────
+function checkmarkSVG(){
+  return '<svg viewBox="0 0 12 10"><polyline points="1,5 4,9 11,1"/></svg>';
+}
+
+// ── INCOME PROJECTION ─────────────────────────────────────────
+let projWindow=3;
+
+function setProjWindow(w, btn){
+  projWindow=w;
+  document.querySelectorAll('.proj-btn').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  renderProjection();
+}
+
+function renderProjection(){
+  const el=$('proj-content');
+  if(!el) return;
+  const now=new Date();
+  let months=[];
+  if(projWindow==='year'){
+    const remaining=12-now.getMonth();
+    for(let i=1;i<=remaining;i++){
+      const d=new Date(now.getFullYear(),now.getMonth()+i,1);
+      months.push(d);
+    }
+  } else {
+    for(let i=1;i<=projWindow;i++){
+      const d=new Date(now.getFullYear(),now.getMonth()+i,1);
+      months.push(d);
+    }
+  }
+
+  const recurring=data.income.filter(i=>i.frequency!=='One-time');
+  if(!recurring.length){
+    el.innerHTML='<div style="font-size:12px;color:var(--muted);padding:8px 0">Add recurring income in Cash Flow to see projections.</div>';
+    return;
+  }
+
+  function monthlyAmount(inc){
+    const map={'Weekly':52/12,'Bi-weekly':26/12,'Monthly':1,'Yearly':1/12};
+    return inc.amount*(map[inc.frequency]||1);
+  }
+
+  const monthlyTotal=recurring.reduce((s,i)=>s+monthlyAmount(i),0);
+  const rows=months.map(d=>{
+    const label=d.toLocaleString('default',{month:'short',year:'2-digit'});
+    return`<div class="proj-bar">
+      <span style="font-size:12px;color:var(--muted)">${label}</span>
+      <span style="font-size:13px;font-weight:700;color:var(--green)">${usd(monthlyTotal)}</span>
+    </div>`;
+  });
+
+  const total=monthlyTotal*months.length;
+  const endLabel=projWindow==='year'?'end of '+now.getFullYear():(projWindow+' months');
+  el.innerHTML=`
+    <div style="background:rgba(34,197,94,.07);border-radius:8px;padding:10px 12px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:11px;color:var(--muted)">Expected by ${endLabel}</span>
+      <span style="font-size:16px;font-weight:700;color:var(--green)">${usd(total)}</span>
+    </div>
+    ${rows.join('')}`;
+}
+
+
 function renderAll(){
   updateOriginalBalances();
   renderAlerts();renderDashboard();renderBudget();renderBills();renderDebt();
   renderNetWorth();renderInsights();renderCards();renderTxns();
   renderSnapshot();updateInsightsBadge();updateBillsBadge();
+  updateLastSavedUI();checkBackupReminder();
 }
 
 // ── INIT ─────────────────────────────────────────
+setInterval(updateLastSavedUI, 60000);
 document.addEventListener('DOMContentLoaded',()=>{
+  loadTheme();
   toggleDebtFields();
   loadData();
   checkPinOnLoad();
   applyTranslations();
   renderAll();
+  showOnboarding();
   setTimeout(()=>{
     renderAll();
     const months=parseInt($('chart-months')?$('chart-months').value:3)||3;
