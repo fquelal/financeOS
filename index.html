@@ -820,6 +820,19 @@ canvas{width:100%!important;}
 .ob-skip-label{font-size:11px;color:var(--border2);margin-top:6px;text-align:center;}
 [data-theme=light] .ob-input,[data-theme=light] .ob-select{background:rgba(0,0,0,.04);}
 
+
+/* ── AUTO-LOG ── */
+.autolog-toggle{display:flex;align-items:center;gap:8px;padding:10px 12px;
+  background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.2);
+  border-radius:10px;cursor:pointer;margin-top:4px;}
+.autolog-toggle input[type=checkbox]{width:16px;height:16px;
+  accent-color:var(--green);cursor:pointer;flex-shrink:0;}
+.autolog-toggle label{font-size:13px;color:var(--text);cursor:pointer;flex:1;}
+#autolog-account-wrap,#b-autolog-account-wrap{display:none;margin-top:8px;}
+.autolog-badge{display:inline-flex;align-items:center;gap:3px;background:rgba(34,197,94,.12);
+  color:var(--green);border:1px solid rgba(34,197,94,.25);border-radius:5px;
+  padding:1px 7px;font-size:10px;font-weight:700;margin-left:5px;}
+
 </style>
 </head>
 <body>
@@ -916,6 +929,9 @@ canvas{width:100%!important;}
       </div>
       <div id="autoprocess-banner"><span id="autoprocess-msg"></span><button class="apb-close" onclick="dismissAutoProcess()">✕</button></div>
       <div id="dash-alerts"></div>
+      <!-- Bill reset notification -->
+      <!-- Auto-log notification banner -->
+      <div id="autolog-banner" style="display:none;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.25);border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:13px;color:var(--green)"></div>
       <!-- Bill reset notification -->
       <div id="bill-reset-banner">
         <button class="brb-dismiss" onclick="dismissBillResetBanner()">&#x2715;</button>
@@ -1401,6 +1417,16 @@ canvas{width:100%!important;}
     <div class="field"><label data-i18n="Frequency">Frequency</label>
       <select id="e-freq"><option selected data-i18n="One-time">One-time</option><option data-i18n="Weekly">Weekly</option><option data-i18n="Bi-weekly">Bi-weekly</option><option data-i18n="Monthly">Monthly</option><option data-i18n="Yearly">Yearly</option></select>
     </div>
+    <div class="autolog-toggle" onclick="toggleAutoLogExpense()">
+      <input type="checkbox" id="e-autolog" onclick="event.stopPropagation();toggleAutoLogExpense()"/>
+      <label for="e-autolog">&#128259; Auto-log this expense every month</label>
+    </div>
+    <div id="autolog-account-wrap" class="field">
+      <label>Deduct from Account</label>
+      <select id="e-autolog-account" style="background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:8px;color:var(--text);font-size:13px;width:100%">
+        <option value="">-- Select account --</option>
+      </select>
+    </div>
     <button class="btn btn-primary btn-full" onclick="saveExpense()" data-i18n="Save Expense">Save Expense</button>
   </div>
 </div>
@@ -1431,7 +1457,19 @@ canvas{width:100%!important;}
       <div class="field" id="b-limit-wrap"><label data-i18n="Credit Limit ($)">Credit Limit ($)</label><input id="b-limit" type="number" inputmode="decimal" placeholder="e.g. 10000"/></div>
     </div>
     <div class="field"><label data-i18n="Recurring?">Recurring?</label>
-      <select id="b-recur"><option>No</option><option data-i18n="Monthly">Monthly</option><option data-i18n="Weekly">Weekly</option><option data-i18n="Yearly">Yearly</option></select>
+      <select id="b-recur" onchange="onBillRecurChange()"><option>No</option><option data-i18n="Monthly">Monthly</option><option data-i18n="Weekly">Weekly</option><option data-i18n="Yearly">Yearly</option></select>
+    </div>
+    <div id="b-autolog-wrap" style="display:none">
+      <div class="autolog-toggle" onclick="toggleAutoLogBill()">
+        <input type="checkbox" id="b-autolog" onclick="event.stopPropagation();toggleAutoLogBill()"/>
+        <label for="b-autolog">&#128259; Auto-log payment every month</label>
+      </div>
+      <div id="b-autolog-account-wrap" class="field">
+        <label>Pay from Account</label>
+        <select id="b-autolog-account" style="background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:8px;color:var(--text);font-size:13px;width:100%">
+          <option value="">-- Select account --</option>
+        </select>
+      </div>
     </div>
     <button class="btn btn-primary btn-full" onclick="saveBill()" data-i18n="Save">Save</button>
     <div id="bill-delete-wrap" style="display:none;margin-top:10px">
@@ -2395,6 +2433,8 @@ function loadData(){
     autoResetRecurringBills();
     // Auto-expire promo APRs when end date passes
     autoExpirePromos();
+    // Auto-log recurring transactions
+    runAutoLog();
     // Auto-expire promo APRs
     autoExpirePromos();
     // Purge obsolete transaction types
@@ -2527,7 +2567,7 @@ function loadDemoData(skipConfirm){
 
     // ── EXPENSES ───────────────────────────────────────────────
     expenses:[
-      {id:2001, category:'Housing',       description:'Rent',                     amount:1450, frequency:'Monthly',  date:ago(1),  accountId:8001},
+      {id:2001, category:'Housing',       description:'Rent',                     amount:1450, frequency:'Monthly',  date:ago(1),  accountId:8001, autoLog:true, autoLogAccountId:8001},
       {id:2002, category:'Transport',     description:'Car insurance',            amount:187,  frequency:'Monthly',  date:ago(5),  accountId:8001},
       {id:2003, category:'Food',          description:'Grocery run - ShopRite',   amount:280,  frequency:'Monthly',  date:ago(4),  accountId:8001},
       {id:2004, category:'Utilities',     description:'Electric & gas',           amount:145,  frequency:'Monthly',  date:ago(2),  accountId:8001},
@@ -3100,8 +3140,8 @@ function show(sec,btn){
 function openModal(type,extra){
   if(type==='goal'){openModal_goal();return;}
   if(type==='income'){$('i-id').value='';$('i-source').value='';$('i-amount').value='';$('i-date').value=today();$('i-freq').value='Monthly';$('i-account').value='';$('i-actual').value='';$('i-actual-wrap').style.display='none';if($('i-lastpay'))$('i-lastpay').value='';if($('i-lastpay-wrap'))$('i-lastpay-wrap').style.display='none';populateAccountSelects();}
-  if(type==='expense'){clearOverlapWarn('expense-overlap-warn');$('expense-modal-title').textContent='Add Expense';$('e-id').value='';$('e-cat').value='';$('e-desc').value='';$('e-amount').value='';$('e-date').value=today();$('e-freq').value='One-time';$('e-account').value='';populateAccountSelects();}
-  if(type==='bill'){clearOverlapWarn('bill-overlap-warn');$('bill-modal-title').textContent='Add Bill / Debt';$('b-id').value='';$('b-name').value='';$('b-amount').value='';$('b-date').value='';$('b-recur').value='No';$('b-type').value='bill';$('b-balance').value='';$('b-apr').value='';$('b-limit').value='';toggleDebtFields();$('bill-delete-wrap').style.display='none';}
+  if(type==='expense'){clearOverlapWarn('expense-overlap-warn');$('expense-modal-title').textContent='Add Expense';$('e-id').value='';$('e-cat').value='';$('e-desc').value='';if($('e-autolog'))$('e-autolog').checked=false;if($('autolog-account-wrap'))$('autolog-account-wrap').style.display='none';$('e-amount').value='';$('e-date').value=today();$('e-freq').value='One-time';$('e-account').value='';populateAccountSelects();}
+  if(type==='bill'){clearOverlapWarn('bill-overlap-warn');$('bill-modal-title').textContent='Add Bill / Debt';$('b-id').value='';$('b-name').value='';if($('b-autolog'))$('b-autolog').checked=false;if($('b-autolog-wrap'))$('b-autolog-wrap').style.display='none';if($('b-autolog-account-wrap'))$('b-autolog-account-wrap').style.display='none';$('b-amount').value='';$('b-date').value='';$('b-recur').value='No';$('b-type').value='bill';$('b-balance').value='';$('b-apr').value='';$('b-limit').value='';toggleDebtFields();$('bill-delete-wrap').style.display='none';}
   if(type==='account'){$('account-modal-title').textContent='Add Account';$('ac-id').value='';$('ac-name').value='';$('ac-type').value='checking';$('ac-balance').value='';$('ac-notes').value='';$('ac-default').checked=false;$('account-delete-wrap').style.display='none';}
   if(type==='purchase'){openPurchaseModal();return;}
   if(type==='txn'){openWithdrawal();return;}
@@ -4045,6 +4085,7 @@ function renderAlerts(){
 function renderDashboard(){
   checkBillResetNotify();
   checkTransferBanner();
+  checkAutoLogBanner();
   // Today display
   const td_el=$('today-display');
   if(td_el){
@@ -4226,7 +4267,7 @@ function renderBudget(){
 
   // Money Out -- expenses + bills combined
   const expRows=data.expenses.map(e=>wrapSwipeable(`<div class="row" style="margin-bottom:0;border-radius:12px"><div>
-      <div class="row-label">${catIcon(e.category)}${e.category} ${recurBadge(e.frequency)}</div>
+      <div class="row-label">${catIcon(e.category)}${e.category} ${recurBadge(e.frequency)}${e.autoLog?'<span class="autolog-badge">&#128259; auto</span>':''}</div>
       <div class="row-sub">${[e.description,fmtDate(e.date)].filter(Boolean).join(' - ')}</div>
     </div><div class="row-actions">
       <span style="color:var(--red);font-weight:600">${usd(e.amount)}</span>
@@ -4298,7 +4339,7 @@ function renderBills(){
     const cardHtml=`<div class="card" style="margin-bottom:0;border-color:${sc}44;border-radius:12px">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px">
         <div>
-          <div style="font-size:15px;font-weight:600;margin-bottom:3px">${b.name}
+          <div style="font-size:15px;font-weight:600;margin-bottom:3px">${b.name}${b.autoLog?'<span class="autolog-badge">&#128259; auto</span>':''}
             ${b.btype==='creditcard'?'<span style="background:rgba(239,68,68,.15);color:#ef4444;border-radius:5px;padding:1px 7px;font-size:10px;font-weight:700;margin-left:4px">CARD</span>':b.btype==='loan'?'<span style="background:rgba(251,146,60,.15);color:#fb923c;border-radius:5px;padding:1px 7px;font-size:10px;font-weight:700;margin-left:4px">LOAN</span>':''}
           </div>
           <div style="font-size:12px;color:var(--muted)">Due: ${fmtDate(b.dueDate)} - ${b.recurring}</div>
@@ -7985,6 +8026,247 @@ function renderTagFilterStrip(){
 function setTagFilter(tag){
   _activeTxnTagFilter = tag;
   renderTxns();
+}
+
+
+
+// ══════════════════════════════════════════════════════════════
+// RECURRING AUTO-LOG
+// ══════════════════════════════════════════════════════════════
+
+const AUTO_LOG_KEY = 'financeOS_autoLogMonth';
+
+function toggleAutoLogExpense(){
+  const chk = $('e-autolog');
+  const wrap = $('autolog-account-wrap');
+  if(!chk||!wrap) return;
+  if(document.activeElement !== chk) chk.checked = !chk.checked;
+  wrap.style.display = chk.checked ? 'block' : 'none';
+  if(chk.checked) populateAutoLogAccountSelect('e-autolog-account');
+}
+
+function toggleAutoLogBill(){
+  const chk = $('b-autolog');
+  const wrap = $('b-autolog-account-wrap');
+  if(!chk||!wrap) return;
+  if(document.activeElement !== chk) chk.checked = !chk.checked;
+  wrap.style.display = chk.checked ? 'block' : 'none';
+  if(chk.checked) populateAutoLogAccountSelect('b-autolog-account');
+}
+
+function onBillRecurChange(){
+  const rec = $('b-recur').value;
+  const wrap = $('b-autolog-wrap');
+  if(wrap) wrap.style.display = (rec && rec!=='No') ? 'block' : 'none';
+}
+
+function populateAutoLogAccountSelect(selId){
+  const sel = $(selId);
+  if(!sel) return;
+  const accs = data.accounts||[];
+  sel.innerHTML = '<option value="">-- Select account --</option>'
+    + accs.map(a=>`<option value="${a.id}"${a.isDefault?' selected':''}>${acTypeIcon[a.type]||''} ${a.name} (${usd(a.balance)})</option>`).join('');
+}
+
+// ── Wire auto-log fields into openModal for expense ──────────
+// Reset auto-log fields when expense modal opens (handled in openModal patch below)
+
+// ── Wire auto-log fields into openEditExpense ────────────────
+const _origOpenEditExpense = openEditExpense;
+function openEditExpense(id){
+  _origOpenEditExpense(id);
+  const e = data.expenses.find(x=>x.id===id);
+  if(!e) return;
+  const chk = $('e-autolog');
+  const wrap = $('autolog-account-wrap');
+  if(chk) chk.checked = !!e.autoLog;
+  if(wrap) wrap.style.display = e.autoLog ? 'block' : 'none';
+  if(e.autoLog) populateAutoLogAccountSelect('e-autolog-account');
+  const sel = $('e-autolog-account');
+  if(sel && e.autoLogAccountId) sel.value = e.autoLogAccountId;
+}
+
+// ── Wire auto-log fields into openEditBill ───────────────────
+const _origOpenEditBill = openEditBill;
+function openEditBill(id){
+  _origOpenEditBill(id);
+  const b = data.bills.find(x=>x.id===id);
+  if(!b) return;
+  const wrap = $('b-autolog-wrap');
+  const chk  = $('b-autolog');
+  const aWrap= $('b-autolog-account-wrap');
+  // Show autolog section if recurring
+  if(wrap) wrap.style.display = (b.recurring && b.recurring!=='No') ? 'block' : 'none';
+  if(chk)  chk.checked = !!b.autoLog;
+  if(aWrap) aWrap.style.display = b.autoLog ? 'block' : 'none';
+  if(b.autoLog) populateAutoLogAccountSelect('b-autolog-account');
+  const sel = $('b-autolog-account');
+  if(sel && b.autoLogAccountId) sel.value = b.autoLogAccountId;
+}
+
+// ── Patch saveExpense to save autoLog fields ──────────────────
+const _origSaveExpense = saveExpense;
+function saveExpense(){
+  // Capture autolog fields before the original saves
+  const autoLog = $('e-autolog') ? $('e-autolog').checked : false;
+  const autoLogAccountId = parseInt($('e-autolog-account')?.value)||0;
+  window._pendingExpenseAutoLog = { autoLog, autoLogAccountId };
+  _origSaveExpense();
+}
+
+// ── Patch saveBill to save autoLog fields ─────────────────────
+const _origSaveBill = saveBill;
+function saveBill(){
+  const autoLog = $('b-autolog') ? $('b-autolog').checked : false;
+  const autoLogAccountId = parseInt($('b-autolog-account')?.value)||0;
+  window._pendingBillAutoLog = { autoLog, autoLogAccountId };
+  _origSaveBill();
+}
+
+// ── Enrich last saved item with autoLog data ─────────────────
+// We hook into saveData to attach the pending autolog to the last-saved expense/bill
+const _origSaveData2 = saveData;
+function saveData(){
+  if(window._pendingExpenseAutoLog){
+    const last = data.expenses[data.expenses.length-1];
+    if(last && !last.autoLog && window._pendingExpenseAutoLog.autoLog){
+      last.autoLog = window._pendingExpenseAutoLog.autoLog;
+      last.autoLogAccountId = window._pendingExpenseAutoLog.autoLogAccountId;
+    } else if(last){
+      last.autoLog = window._pendingExpenseAutoLog.autoLog;
+      last.autoLogAccountId = window._pendingExpenseAutoLog.autoLogAccountId;
+    }
+    window._pendingExpenseAutoLog = null;
+  }
+  if(window._pendingBillAutoLog){
+    const last = data.bills[data.bills.length-1];
+    if(last){
+      last.autoLog = window._pendingBillAutoLog.autoLog;
+      last.autoLogAccountId = window._pendingBillAutoLog.autoLogAccountId;
+    }
+    window._pendingBillAutoLog = null;
+  }
+  _origSaveData2();
+}
+
+// ── MAIN AUTO-LOG RUNNER ──────────────────────────────────────
+function runAutoLog(){
+  const currentMonth = today().slice(0,7);
+  const lastRun = localStorage.getItem(AUTO_LOG_KEY);
+  if(lastRun === currentMonth) return; // Already ran this month
+
+  const logged = [];
+  const now = new Date();
+
+  // ── Auto-log recurring expenses ──────────────────────────
+  (data.expenses||[]).forEach(e=>{
+    if(!e.autoLog || !e.autoLogAccountId) return;
+    if(!e.frequency || e.frequency==='One-time') return;
+
+    // Check if already logged this month
+    const alreadyLogged = data.transactions.some(tx=>
+      tx.autoLogRef === e.id &&
+      tx.date && tx.date.slice(0,7) === currentMonth
+    );
+    if(alreadyLogged) return;
+
+    const amt = parseFloat(e.amount)||0;
+    if(!amt) return;
+
+    // Deduct from account
+    adjustAccountBalance(e.autoLogAccountId, -amt);
+
+    // Log transaction
+    data.transactions.push({
+      id: Date.now()+Math.random(),
+      description: e.description || e.category,
+      amount: amt,
+      type: 'Bill Payment',
+      date: today(),
+      accountId: e.autoLogAccountId,
+      category: e.category,
+      methodLabel: (data.accounts||[]).find(a=>a.id===e.autoLogAccountId)?.name||'',
+      autoLogRef: e.id,
+      note: 'Auto-logged'
+    });
+
+    logged.push({ name: e.description||e.category, amount: amt, type:'expense' });
+  });
+
+  // ── Auto-log recurring bills (non-debt only) ──────────────
+  (data.bills||[]).forEach(b=>{
+    if(!b.autoLog || !b.autoLogAccountId) return;
+    if(b.recurring==='No' || !b.recurring) return;
+    if(b.btype==='creditcard'||b.btype==='loan'||b.btype==='promo') return;
+
+    // Check if already logged this month
+    const alreadyLogged = data.transactions.some(tx=>
+      tx.autoLogRef === b.id &&
+      tx.date && tx.date.slice(0,7) === currentMonth
+    );
+    if(alreadyLogged) return;
+
+    const amt = parseFloat(b.amount)||0;
+    if(!amt) return;
+
+    // Deduct from account
+    adjustAccountBalance(b.autoLogAccountId, -amt);
+
+    // Mark bill as Paid
+    b.status = 'Paid';
+
+    // Log transaction
+    data.transactions.push({
+      id: Date.now()+Math.random(),
+      description: b.name+' payment',
+      amount: amt,
+      type: 'Bill Payment',
+      date: today(),
+      accountId: b.autoLogAccountId,
+      methodLabel: (data.accounts||[]).find(a=>a.id===b.autoLogAccountId)?.name||'',
+      autoLogRef: b.id,
+      note: 'Auto-logged'
+    });
+
+    logged.push({ name: b.name, amount: amt, type:'bill' });
+  });
+
+  if(logged.length){
+    // Store notification for dashboard
+    const total = logged.reduce((s,l)=>s+l.amount,0);
+    localStorage.setItem('financeOS_autoLogNotify', JSON.stringify({
+      month: currentMonth,
+      count: logged.length,
+      total,
+      items: logged.slice(0,5).map(l=>l.name)
+    }));
+    saveData();
+  }
+
+  localStorage.setItem(AUTO_LOG_KEY, currentMonth);
+}
+
+// ── AUTO-LOG DASHBOARD BANNER ─────────────────────────────────
+function checkAutoLogBanner(){
+  const raw = localStorage.getItem('financeOS_autoLogNotify');
+  if(!raw) return;
+  try{
+    const n = JSON.parse(raw);
+    const banner = $('autolog-banner');
+    if(!banner) return;
+    const monthFmt = new Date(n.month+'-15').toLocaleString('default',{month:'long',year:'numeric'});
+    banner.style.display = 'block';
+    banner.innerHTML = `
+      <button onclick="dismissAutoLogBanner()" style="float:right;background:none;border:none;color:var(--green);cursor:pointer;font-size:16px">&#x2715;</button>
+      <div style="font-weight:700;margin-bottom:4px">&#128259; Auto-logged ${n.count} payment${n.count>1?'s':''} for ${monthFmt}</div>
+      <div style="font-size:12px;color:var(--muted)">${n.items.join(', ')}${n.count>5?' +more':''} &mdash; Total: ${usd(n.total)}</div>`;
+  }catch(e){}
+}
+
+function dismissAutoLogBanner(){
+  const banner = $('autolog-banner');
+  if(banner) banner.style.display='none';
+  localStorage.removeItem('financeOS_autoLogNotify');
 }
 
 
