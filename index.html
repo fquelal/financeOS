@@ -1493,7 +1493,7 @@ canvas{width:100%!important;}
         <div class="about-tip">&#128161; <strong>The Debt Planner sorts 0% promos last on purpose.</strong> In Avalanche mode, 0% cards go to the bottom - that's correct. Let them ride free while you attack high-APR debt first.</div>
       </div>
 
-      <div class="about-version">FinanceOS &bull; Built for personal use &bull; Data never leaves your device &bull; v4 &bull; 2026</div>
+      <div class="about-version" id="about-version-text">FinanceOS &bull; Built for personal use &bull; Data never leaves your device &bull; 2026</div>
     </div>
 
 </main>
@@ -2174,6 +2174,7 @@ canvas{width:100%!important;}
 <script>
 'use strict';
 const STORAGE_KEY='financeOS_v4';
+const APP_VERSION='v1.5.0';
 const PIN_KEY='financeOS_pin';
 let data={income:[],expenses:[],bills:[],cards:[],transactions:[],assets:[],targets:[],accounts:[]};
 let currentTxnType='Withdrawal';
@@ -2590,6 +2591,13 @@ function closeSidebar(){
 
 // ── PERSISTENCE ──────────────────────────────────
 function saveData(){
+  // Enrich latest transaction with pending promo data
+  if(window._pendingPromo && data.transactions.length){
+    const last=data.transactions[data.transactions.length-1];
+    if(!last.promoType) Object.assign(last,window._pendingPromo);
+    window._pendingPromo=null;
+  }
+  // Persist to localStorage
   try{
     localStorage.setItem(STORAGE_KEY,JSON.stringify(data));
     localStorage.setItem(SAVE_TS_KEY,Date.now().toString());
@@ -3434,6 +3442,8 @@ function saveIncome(){
   closeModal('income');saveData();renderAll();
 }
 function saveExpense(){
+  const autoLog = $('e-autolog') ? $('e-autolog').checked : false;
+  const autoLogAccountId = parseInt($('e-autolog-account')?.value)||0;
   const cat=$('e-cat').value,desc=$('e-desc').value.trim(),amt=parseFloat($('e-amount').value),dt=$('e-date').value,freq=$('e-freq').value,acId=parseInt($('e-account').value)||0;
   if(!cat||!amt)return;
   const eid=parseInt($('e-id').value);
@@ -3447,13 +3457,15 @@ function saveExpense(){
   }
   // Reverse previous account debit if editing
   if(prev&&prev.accountId) adjustAccountBalance(prev.accountId,prev.amount);
-  const item={id:eid||Date.now(),category:cat,description:desc,amount:amt,date:dt,frequency:freq,accountId:acId};
+  const item={id:eid||Date.now(),category:cat,description:desc,amount:amt,date:dt,frequency:freq,accountId:acId,autoLog,autoLogAccountId};
   data.expenses=eid?data.expenses.map(e=>e.id===eid?item:e):[...data.expenses,item];
   // Debit account
   if(acId) adjustAccountBalance(acId,-amt);
   closeModal('expense');saveData();renderAll();
 }
 function saveBill(){
+  const autoLog = $('b-autolog') ? $('b-autolog').checked : false;
+  const autoLogAccountId = parseInt($('b-autolog-account')?.value)||0;
   const name=$('b-name').value.trim(),amt=parseFloat($('b-amount').value),dt=$('b-date').value,rec=$('b-recur').value,btype=$('b-type').value;
   const balance=parseFloat($('b-balance').value)||0;
   const apr=parseFloat($('b-apr').value)||0;
@@ -3465,6 +3477,7 @@ function saveBill(){
   const item={id:eid||Date.now(),name,amount:amt,dueDate:dt,recurring:rec,
     status:prev?prev.status:'Pending',btype,
     balance:isDebt?balance:0,apr:isDebt?apr:0,creditLimit,
+    autoLog,autoLogAccountId,
     scheduledAmount:prev?prev.scheduledAmount:null,
     scheduledAccountId:prev?prev.scheduledAccountId:null
   };
@@ -5278,12 +5291,7 @@ function obSkipOnboarding(){
   if(ov) ov.classList.add('hidden');
 }
 
-function obDemo(){
-  obSkipOnboarding();
-  loadDemoData(true);
-  var firstNav = document.querySelector('.nav-item');
-  show('dashboard', firstNav);
-}
+
 
 function obDots(current, total){
   var s = '';
@@ -5304,9 +5312,19 @@ function obRender(){
       '<div class="ob-title">Welcome to FinanceOS</div>' +
       '<div class="ob-desc">Your personal finance co-pilot. Everything stays private on your device &mdash; nothing is ever sent anywhere.</div>' +
       '<div class="ob-btns">' +
-        '<button class="ob-skip" onclick="obSkipOnboarding()">Skip setup</button>' +
-        '<button class="btn btn-secondary" onclick="obDemo()" style="padding:10px 18px">&#127917; Try Demo</button>' +
+        '<button class="ob-skip" onclick="obStep=\'skip\';obRender()">Skip setup</button>' +
         '<button class="btn btn-primary" onclick="obStep=1;obRender()" style="padding:10px 28px">Get Started</button>' +
+      '</div>';
+  }
+
+  else if(obStep==='skip'){
+    html =
+      '<div class="ob-icon">&#127917;</div>' +
+      '<div class="ob-title">Want to explore first?</div>' +
+      '<div class="ob-desc">Load realistic sample data to see how FinanceOS works &mdash; or jump straight in with a clean slate.</div>' +
+      '<div class="ob-btns" style="flex-direction:column;gap:10px">' +
+        '<button class="btn btn-primary" onclick="obDemo()" style="padding:10px 28px;width:100%">&#127917; Try Demo Data</button>' +
+        '<button class="btn btn-secondary" onclick="obSkipOnboarding()" style="padding:10px 28px;width:100%">Start Fresh</button>' +
       '</div>';
   }
 
@@ -5329,6 +5347,7 @@ function obRender(){
             '<input class="ob-input" id="ob-ac-bal" type="number" inputmode="decimal" placeholder="0.00"/></div>' +
         '</div>' +
       '</div>' +
+      '<div id="ob-err-1" style="color:var(--red);font-size:12px;margin-bottom:6px;display:none"></div>' +
       '<div class="ob-btns">' +
         '<button class="btn btn-primary" onclick="obSaveAccount()" style="padding:10px 28px">Save &amp; Continue</button>' +
       '</div>' +
@@ -5355,6 +5374,7 @@ function obRender(){
             '</select></div>' +
         '</div>' +
       '</div>' +
+      '<div id="ob-err-2" style="color:var(--red);font-size:12px;margin-bottom:6px;display:none"></div>' +
       '<div class="ob-btns">' +
         '<button class="btn btn-primary" onclick="obSaveIncome()" style="padding:10px 28px">Save &amp; Continue</button>' +
       '</div>' +
@@ -5376,6 +5396,7 @@ function obRender(){
             '<input class="ob-input" id="ob-bill-day" type="number" placeholder="1" min="1" max="31" value="1"/></div>' +
         '</div>' +
       '</div>' +
+      '<div id="ob-err-3" style="color:var(--red);font-size:12px;margin-bottom:6px;display:none"></div>' +
       '<div class="ob-btns">' +
         '<button class="btn btn-primary" onclick="obSaveBill()" style="padding:10px 28px">Save &amp; Continue</button>' +
       '</div>' +
@@ -5408,7 +5429,6 @@ function obRender(){
       '<div class="ob-desc">Here\'s your starting picture.</div>' +
       summaryHtml +
       '<div class="ob-btns">' +
-        '<button class="btn btn-secondary" onclick="obDemo()" style="padding:10px 18px">&#127917; Load Demo Data</button>' +
         '<button class="btn btn-primary" onclick="obFinish()" style="padding:10px 28px">Open FinanceOS</button>' +
       '</div>';
   }
@@ -5416,28 +5436,56 @@ function obRender(){
   card.innerHTML = html;
 }
 
+function obDemo(){
+  obSkipOnboarding();
+  loadDemoData(true);
+  var firstNav = document.querySelector('.nav-item');
+  show('dashboard', firstNav);
+  setTimeout(()=>{
+    renderAll();
+    const months=parseInt($('chart-months')?$('chart-months').value:3)||3;
+    drawChart(getMonthlyExpenses(months));
+  },350);
+}
+
 function obSaveAccount(){
   var nameEl = document.getElementById('ob-ac-name');
   var typeEl = document.getElementById('ob-ac-type');
   var balEl  = document.getElementById('ob-ac-bal');
-  var name = (nameEl && nameEl.value) ? nameEl.value.trim() : 'Checking Account';
-  var type = (typeEl && typeEl.value) ? typeEl.value : 'checking';
-  var bal  = (balEl && balEl.value) ? (parseFloat(balEl.value) || 0) : 0;
-  window._obAccount = { name: name||'Checking Account', type: type, balance: bal };
-  obStep = 2;
-  obRender();
+  var name   = (nameEl && nameEl.value) ? nameEl.value.trim() : '';
+  var type   = (typeEl && typeEl.value) ? typeEl.value : 'checking';
+  var balRaw = balEl ? balEl.value.trim() : '';
+  var err    = document.getElementById('ob-err-1');
+  if(!name){
+    if(err){err.textContent='Please enter an account name.';err.style.display='block';}
+    if(nameEl) nameEl.focus(); return;
+  }
+  if(balRaw===''){
+    if(err){err.textContent='Please enter the current balance (use 0 if unsure).';err.style.display='block';}
+    if(balEl) balEl.focus(); return;
+  }
+  window._obAccount = { name: name, type: type, balance: parseFloat(balRaw)||0 };
+  obStep = 2; obRender();
 }
 
 function obSaveIncome(){
   var srcEl  = document.getElementById('ob-inc-source');
   var amtEl  = document.getElementById('ob-inc-amount');
   var freqEl = document.getElementById('ob-inc-freq');
-  var source = (srcEl && srcEl.value) ? srcEl.value.trim() : 'Income';
-  var amount = (amtEl && amtEl.value) ? (parseFloat(amtEl.value) || 0) : 0;
+  var source = (srcEl && srcEl.value) ? srcEl.value.trim() : '';
+  var amount = (amtEl && amtEl.value) ? (parseFloat(amtEl.value)||0) : 0;
   var freq   = (freqEl && freqEl.value) ? freqEl.value : 'Monthly';
-  if(amount > 0) window._obIncome = { source: source||'Income', amount: amount, frequency: freq };
-  obStep = 3;
-  obRender();
+  var err    = document.getElementById('ob-err-2');
+  if(!source){
+    if(err){err.textContent='Please enter an income source name.';err.style.display='block';}
+    if(srcEl) srcEl.focus(); return;
+  }
+  if(!amount||amount<=0){
+    if(err){err.textContent='Please enter an amount greater than 0.';err.style.display='block';}
+    if(amtEl) amtEl.focus(); return;
+  }
+  window._obIncome = { source: source, amount: amount, frequency: freq };
+  obStep = 3; obRender();
 }
 
 function obSaveBill(){
@@ -5445,11 +5493,19 @@ function obSaveBill(){
   var amtEl  = document.getElementById('ob-bill-amt');
   var dayEl  = document.getElementById('ob-bill-day');
   var name   = (nameEl && nameEl.value) ? nameEl.value.trim() : '';
-  var amount = (amtEl && amtEl.value) ? (parseFloat(amtEl.value) || 0) : 0;
-  var day    = (dayEl && dayEl.value) ? (parseInt(dayEl.value) || 1) : 1;
-  if(name && amount > 0) window._obBill = { name: name, amount: amount, day: day };
-  obStep = 4;
-  obRender();
+  var amount = (amtEl && amtEl.value) ? (parseFloat(amtEl.value)||0) : 0;
+  var day    = (dayEl && dayEl.value) ? (parseInt(dayEl.value)||1) : 1;
+  var err    = document.getElementById('ob-err-3');
+  if(!name){
+    if(err){err.textContent='Please enter a bill name.';err.style.display='block';}
+    if(nameEl) nameEl.focus(); return;
+  }
+  if(!amount||amount<=0){
+    if(err){err.textContent='Please enter an amount greater than 0.';err.style.display='block';}
+    if(amtEl) amtEl.focus(); return;
+  }
+  window._obBill = { name: name, amount: amount, day: day };
+  obStep = 4; obRender();
 }
 
 
@@ -6919,18 +6975,7 @@ function confirmPurchase(){
 // We intercept by wrapping push on the array after the original runs
 // Better: patch the transaction object after it's pushed
 // saveData patched below to enrich last transaction with promo data
-const _origSaveData = saveData;
-function saveData(){
-  // Enrich latest transaction with promo data if pending
-  if(window._pendingPromo && data.transactions.length){
-    const last = data.transactions[data.transactions.length-1];
-    if(!last.promoType){
-      Object.assign(last, window._pendingPromo);
-    }
-    window._pendingPromo = null;
-  }
-  _origSaveData();
-}
+
 
 
 
@@ -8181,49 +8226,13 @@ function openEditBill(id){
   if(sel && b.autoLogAccountId) sel.value = b.autoLogAccountId;
 }
 
-// ── Patch saveExpense to save autoLog fields ──────────────────
-const _origSaveExpense = saveExpense;
-function saveExpense(){
-  // Capture autolog fields before the original saves
-  const autoLog = $('e-autolog') ? $('e-autolog').checked : false;
-  const autoLogAccountId = parseInt($('e-autolog-account')?.value)||0;
-  window._pendingExpenseAutoLog = { autoLog, autoLogAccountId };
-  _origSaveExpense();
-}
 
-// ── Patch saveBill to save autoLog fields ─────────────────────
-const _origSaveBill = saveBill;
-function saveBill(){
-  const autoLog = $('b-autolog') ? $('b-autolog').checked : false;
-  const autoLogAccountId = parseInt($('b-autolog-account')?.value)||0;
-  window._pendingBillAutoLog = { autoLog, autoLogAccountId };
-  _origSaveBill();
-}
 
-// ── Enrich last saved item with autoLog data ─────────────────
-// We hook into saveData to attach the pending autolog to the last-saved expense/bill
-const _origSaveData2 = saveData;
-function saveData(){
-  if(window._pendingExpenseAutoLog){
-    const expArr = data.expenses||[];
-    const last = expArr.length ? expArr[expArr.length-1] : null;
-    if(last){
-      last.autoLog = window._pendingExpenseAutoLog.autoLog;
-      last.autoLogAccountId = window._pendingExpenseAutoLog.autoLogAccountId;
-    }
-    window._pendingExpenseAutoLog = null;
-  }
-  if(window._pendingBillAutoLog){
-    const billArr = data.bills||[];
-    const last = billArr.length ? billArr[billArr.length-1] : null;
-    if(last){
-      last.autoLog = window._pendingBillAutoLog.autoLog;
-      last.autoLogAccountId = window._pendingBillAutoLog.autoLogAccountId;
-    }
-    window._pendingBillAutoLog = null;
-  }
-  _origSaveData2();
-}
+
+
+
+
+
 
 // ── MAIN AUTO-LOG RUNNER ──────────────────────────────────────
 function runAutoLog(){
@@ -8358,6 +8367,8 @@ function renderAll(){
 // ── INIT ─────────────────────────────────────────
 setInterval(updateLastSavedUI, 60000);
 document.addEventListener('DOMContentLoaded',()=>{
+  // Stamp version into About page
+  const av=$('about-version-text'); if(av) av.textContent=`FinanceOS \u2022 Built for personal use \u2022 Data never leaves your device \u2022 ${APP_VERSION} \u2022 2026`;
   loadTheme();
   toggleDebtFields();
   loadData();
