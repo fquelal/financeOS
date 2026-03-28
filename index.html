@@ -4558,8 +4558,7 @@ function renderBudget(){
     </div></div>`,'expenses',e.id,`openEditExpense(${e.id})`));
 
   const billTypeIcon={bill:'📋',creditcard:'💳',loan:'🏦',promo:'🎁'};
-  const billRows=data.bills.map(b=>`
-    <div class="row"><div>
+  const billRows=data.bills.map(b=>wrapSwipeable(`<div class="row" style="margin-bottom:0;border-radius:12px"><div>
       <div class="row-label">${billTypeIcon[b.btype]||'📋'} ${b.name}
         ${b.btype==='creditcard'?'<span style="background:rgba(239,68,68,.15);color:#ef4444;border-radius:5px;padding:1px 6px;font-size:10px;font-weight:700;margin-left:4px">CARD</span>':
           b.btype==='loan'?'<span style="background:rgba(251,146,60,.15);color:#fb923c;border-radius:5px;padding:1px 6px;font-size:10px;font-weight:700;margin-left:4px">LOAN</span>':
@@ -4569,8 +4568,8 @@ function renderBudget(){
     </div><div class="row-actions">
       <span style="color:var(--red);font-weight:600">${usd(b.amount)}</span>
       <button class="btn btn-secondary btn-sm" onclick="openEditBill(${b.id})">✏️</button>
-      <button class="btn btn-danger btn-sm" onclick="deleteBillFromModal(${b.id})">✕</button>
-    </div></div>`);
+      <button class="btn btn-danger btn-sm show-desktop" onclick="deleteBillFromModal(${b.id})">✕</button>
+    </div></div>`,'bills',b.id,`openEditBill(${b.id})`));
 
   const allOut=[...expRows,...billRows];
   $('expense-list').innerHTML=allOut.length?allOut.join(''):emptyState('💸','No outgoings yet','Add your monthly expenses and bills to see your full cash flow picture.','+ Add Expense',"openModal('expense')");
@@ -4638,7 +4637,7 @@ function renderBills(){
         </div>
       </div>
     </div>`;
-    return divider+wrapSwipeable(cardHtml,'bills',b.id);
+    return divider+wrapSwipeable(cardHtml,'bills',b.id,`openEditBill(${b.id})`);
   });
   $('bill-list').innerHTML=rows.join('');
   setTimeout(attachSwipes,50);
