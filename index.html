@@ -223,6 +223,13 @@ canvas{width:100%!important;}
 .swipe-delete-zone{position:absolute;right:0;top:0;height:100%;width:80px;background:var(--red);display:flex;align-items:center;justify-content:center;border-radius:0 12px 12px 0;cursor:pointer;transform:translateX(80px);transition:transform .25s ease;}
 .swipe-delete-zone svg{width:22px;height:22px;fill:#fff;}
 .swipe-wrap.swiped .swipe-delete-zone{transform:translateX(0);}
+.swipe-actions{position:absolute;right:0;top:0;height:100%;width:160px;display:flex;border-radius:0 12px 12px 0;transform:translateX(160px);transition:transform .25s ease;}
+.swipe-action-edit{flex:1;background:var(--blue);display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.swipe-action-edit svg{width:20px;height:20px;fill:#fff;}
+.swipe-action-del{flex:1;background:var(--red);display:flex;align-items:center;justify-content:center;cursor:pointer;border-radius:0 12px 12px 0;}
+.swipe-action-del svg{width:22px;height:22px;fill:#fff;}
+.swipe-wrap.swiped-2 .swipe-actions{transform:translateX(0);}
+.swipe-wrap.swiped-2 .card,.swipe-wrap.swiped-2 .row{transform:translateX(-160px);}
 /* Empty state guidance */
 .empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:36px 20px;text-align:center;gap:10px;}
 .empty-state .es-icon{font-size:40px;opacity:.6;}
@@ -2715,7 +2722,9 @@ function exportData(){
 function importData(){
   const input=document.createElement('input');
   input.type='file';input.accept='.json';
+  input.style.cssText='position:fixed;top:-9999px;left:-9999px;opacity:0;pointer-events:none;';
   input.onchange=e=>{
+    document.body.removeChild(input);
     const file=e.target.files[0];if(!file)return;
     const reader=new FileReader();
     reader.onload=ev=>{
@@ -2725,6 +2734,10 @@ function importData(){
         if(typeof parsed!=='object'||Array.isArray(parsed)) throw new Error('Invalid file format');
         const valid={income:[],expenses:[],bills:[],cards:[],transactions:[]};
         Object.keys(valid).forEach(k=>{ if(Array.isArray(parsed[k])) valid[k]=parsed[k]; });
+        // Carry over optional arrays
+        ['assets','targets','accounts','goals','_pendingTransfers'].forEach(k=>{
+          if(Array.isArray(parsed[k])) valid[k]=parsed[k];
+        });
         if(confirm(`Import data? This will replace your current data.\n\nFound: ${valid.income.length} income, ${valid.expenses.length} expenses, ${valid.bills.length} bills, ${valid.cards.length} cards, ${valid.transactions.length} transactions.`)){
           data=valid;
           saveData();
@@ -2736,6 +2749,7 @@ function importData(){
     };
     reader.readAsText(file);
   };
+  document.body.appendChild(input);
   input.click();
 }
 
@@ -3386,6 +3400,12 @@ function openEditExpense(id){
   $('e-id').value=e.id;$('e-cat').value=e.category;$('e-desc').value=e.description||'';$('e-amount').value=e.amount;$('e-date').value=e.date||'';$('e-freq').value=e.frequency||'One-time';
   populateAccountSelects();
   $('e-account').value=e.accountId||'';
+  // Wire auto-log fields
+  const chk=$('e-autolog'); const wrap=$('autolog-account-wrap');
+  if(chk) chk.checked=!!e.autoLog;
+  if(wrap) wrap.style.display=e.autoLog?'block':'none';
+  if(e.autoLog) populateAutoLogAccountSelect('e-autolog-account');
+  const sel=$('e-autolog-account'); if(sel&&e.autoLogAccountId) sel.value=e.autoLogAccountId;
   $('modal-expense').classList.add('open');
 }
 function openEditBill(id){
@@ -3394,8 +3414,14 @@ function openEditBill(id){
   $('b-id').value=b.id;$('b-name').value=b.name;$('b-amount').value=b.amount;$('b-date').value=b.dueDate;$('b-recur').value=b.recurring;
   $('b-type').value=b.btype||'bill';$('b-balance').value=b.balance||'';$('b-apr').value=b.apr||'';$('b-limit').value=b.creditLimit||'';
   toggleDebtFields();
-  // Show delete button only when editing existing bill
   $('bill-delete-wrap').style.display='block';
+  // Wire auto-log fields
+  const wrap=$('b-autolog-wrap'); const chk=$('b-autolog'); const aWrap=$('b-autolog-account-wrap');
+  if(wrap) wrap.style.display=(b.recurring&&b.recurring!=='No')?'block':'none';
+  if(chk) chk.checked=!!b.autoLog;
+  if(aWrap) aWrap.style.display=b.autoLog?'block':'none';
+  if(b.autoLog) populateAutoLogAccountSelect('b-autolog-account');
+  const sel=$('b-autolog-account'); if(sel&&b.autoLogAccountId) sel.value=b.autoLogAccountId;
   $('modal-bill').classList.add('open');
 }
 function deleteBillFromModal(inlineId){
@@ -3422,7 +3448,7 @@ function openEditTxn(id){
 
 // ── SAVE FUNCTIONS ───────────────────────────────
 function saveIncome(){
-  const src=$('i-source').value.trim(),amt=parseFloat($('i-amount').value),freq=$('i-freq').value,dt=$('i-date').value,acId=parseInt($('i-account').value)||0;
+  const src=$('i-source').value.trim(),amt=sanitizeNum($('i-amount').value),freq=$('i-freq').value,dt=$('i-date').value,acId=parseInt($('i-account').value)||0;
   const lastPayDate=freq==='Bi-weekly'&&$('i-lastpay')?$('i-lastpay').value:null;
   if(!src||!amt)return;
   const eid=parseInt($('i-id').value);
@@ -3444,7 +3470,7 @@ function saveIncome(){
 function saveExpense(){
   const autoLog = $('e-autolog') ? $('e-autolog').checked : false;
   const autoLogAccountId = parseInt($('e-autolog-account')?.value)||0;
-  const cat=$('e-cat').value,desc=$('e-desc').value.trim(),amt=parseFloat($('e-amount').value),dt=$('e-date').value,freq=$('e-freq').value,acId=parseInt($('e-account').value)||0;
+  const cat=$('e-cat').value,desc=$('e-desc').value.trim(),amt=sanitizeNum($('e-amount').value),dt=$('e-date').value,freq=$('e-freq').value,acId=parseInt($('e-account').value)||0;
   if(!cat||!amt)return;
   const eid=parseInt($('e-id').value);
   const prev=eid?data.expenses.find(e=>e.id===eid):null;
@@ -3463,13 +3489,16 @@ function saveExpense(){
   if(acId) adjustAccountBalance(acId,-amt);
   closeModal('expense');saveData();renderAll();
 }
+// Strip non-numeric chars from pasted values (%, $, commas, spaces, etc.)
+const sanitizeNum = s => parseFloat(String(s).replace(/[^0-9.\-]/g,'')) || 0;
+
 function saveBill(){
   const autoLog = $('b-autolog') ? $('b-autolog').checked : false;
-  const autoLogAccountId = parseInt($('b-autolog-account')?.value)||0;
-  const name=$('b-name').value.trim(),amt=parseFloat($('b-amount').value),dt=$('b-date').value,rec=$('b-recur').value,btype=$('b-type').value;
-  const balance=parseFloat($('b-balance').value)||0;
-  const apr=parseFloat($('b-apr').value)||0;
-  const creditLimit=btype==='creditcard'?parseFloat($('b-limit').value)||0:0;
+  const autoLogAccountId = sanitizeNum($('b-autolog-account')?.value);
+  const name=$('b-name').value.trim(),amt=sanitizeNum($('b-amount').value),dt=$('b-date').value,rec=$('b-recur').value,btype=$('b-type').value;
+  const balance=sanitizeNum($('b-balance').value);
+  const apr=sanitizeNum($('b-apr').value);
+  const creditLimit=btype==='creditcard'?sanitizeNum($('b-limit').value):0;
   if(!name||!amt)return;
   const eid=parseInt($('b-id').value);
   const prev=eid?data.bills.find(b=>b.id===eid):null;
@@ -3542,8 +3571,11 @@ function saveTxn(){
 }
 
 // ── SWIPE TO DELETE ────────────────────────────────
-function initSwipe(wrap, onDeleteFn){
+function initSwipe(wrap, onDeleteFn, onEditFn){
   const inner=wrap.firstElementChild;
+  const twoBtn=!!onEditFn;
+  const snapDist=twoBtn?160:80;
+  const swipedClass=twoBtn?'swiped-2':'swiped';
   let startX=0,startY=0,dx=0,swiped=false,locked=false;
   wrap.addEventListener('touchstart',e=>{
     startX=e.touches[0].clientX;startY=e.touches[0].clientY;
@@ -3554,25 +3586,42 @@ function initSwipe(wrap, onDeleteFn){
     if(!locked){if(Math.abs(diffY)>Math.abs(diffX)){locked=true;return;}}
     if(locked)return;
     dx=Math.min(0,diffX);
-    inner.style.transform='translateX('+Math.max(dx,-80)+'px)';
+    inner.style.transform='translateX('+Math.max(dx,-snapDist)+'px)';
     e.preventDefault();
   },{passive:false});
   wrap.addEventListener('touchend',()=>{
     inner.style.transition='';
-    if(dx<-50){inner.style.transform='translateX(-80px)';wrap.classList.add('swiped');swiped=true;}
-    else{inner.style.transform='';wrap.classList.remove('swiped');swiped=false;}
+    if(dx<-50){inner.style.transform='translateX(-'+snapDist+'px)';wrap.classList.add(swipedClass);swiped=true;}
+    else{inner.style.transform='';wrap.classList.remove(swipedClass);swiped=false;}
     dx=0;
   });
   wrap.addEventListener('click',e=>{
-    if(swiped&&!e.target.closest('.swipe-delete-zone')){
-      inner.style.transform='';wrap.classList.remove('swiped');swiped=false;
+    if(swiped&&!e.target.closest('.swipe-delete-zone')&&!e.target.closest('.swipe-actions')){
+      inner.style.transform='';wrap.classList.remove(swipedClass);swiped=false;
     }
   });
-  const zone=wrap.querySelector('.swipe-delete-zone');
-  if(zone) zone.addEventListener('click',()=>{ onDeleteFn(); });
+  if(twoBtn){
+    const actions=wrap.querySelector('.swipe-actions');
+    if(actions){
+      const delBtn=actions.querySelector('.swipe-action-del');
+      const editBtn=actions.querySelector('.swipe-action-edit');
+      if(delBtn) delBtn.addEventListener('click',()=>onDeleteFn());
+      if(editBtn) editBtn.addEventListener('click',()=>onEditFn());
+    }
+  } else {
+    const zone=wrap.querySelector('.swipe-delete-zone');
+    if(zone) zone.addEventListener('click',()=>onDeleteFn());
+  }
 }
 
-function wrapSwipeable(html, key, id){
+function wrapSwipeable(html, key, id, editAction){
+  if(editAction){
+    return '<div class="swipe-wrap">'+html
+      +'<div class="swipe-actions" data-key="'+key+'" data-id="'+id+'" data-edit="'+editAction+'">'
+      +'<div class="swipe-action-edit"><svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></div>'
+      +'<div class="swipe-action-del"><svg viewBox="0 0 24 24"><path d="M9 3h6l1 1h4v2H4V4h4zm-4 5h14l-1 13H6zm5 2v9h1v-9zm4 0v9h1v-9z"/></svg></div>'
+      +'</div></div>';
+  }
   return '<div class="swipe-wrap">'+html
     +'<div class="swipe-delete-zone" data-key="'+key+'" data-id="'+id+'">'
     +'<svg viewBox="0 0 24 24" width="22" height="22" fill="#fff"><path d="M9 3h6l1 1h4v2H4V4h4zm-4 5h14l-1 13H6zm5 2v9h1v-9zm4 0v9h1v-9z"/></svg>'
@@ -3583,6 +3632,18 @@ function attachSwipes(){
   document.querySelectorAll('.swipe-wrap').forEach(wrap=>{
     if(wrap._swipeInited) return;
     wrap._swipeInited=true;
+    // Two-button mode (edit + delete)
+    const actions=wrap.querySelector('.swipe-actions');
+    if(actions){
+      const key=actions.getAttribute('data-key');
+      const id=parseInt(actions.getAttribute('data-id'));
+      const editFnName=actions.getAttribute('data-edit');
+      const onDelete=()=>{ if(key&&id) deleteItem(key,id); };
+      const onEdit=()=>{ if(editFnName) eval(editFnName); };
+      initSwipe(wrap, onDelete, onEdit);
+      return;
+    }
+    // Single-button mode (delete only)
     const zone=wrap.querySelector('.swipe-delete-zone');
     if(!zone) return;
     const key=zone.getAttribute('data-key');
@@ -3704,13 +3765,13 @@ function sbSelect(type){
     $('sb-min-btn').style.outline='2px solid var(--accent)';
     $('sb-custom').value='';
   } else {
-    _sbAmount=parseFloat($('sb-custom').value)||0;
+    _sbAmount=sanitizeNum($('sb-custom').value)||0;
     $('sb-min-btn').style.outline='none';
   }
 }
 function confirmScheduleBill(){
   const b=data.bills.find(x=>x.id===_scheduleBillId);if(!b)return;
-  const amt=parseFloat($('sb-custom').value)||_sbAmount||b.amount;
+  const amt=sanitizeNum($('sb-custom').value)||_sbAmount||b.amount;
   const acId=parseInt($('sb-account').value)||0;
   if(!amt||amt<=0){showToast(t('Enter a valid amount'),'error');return;}
   if(!acId){showToast(t('Please select a Pay From account'),'error');return;}
@@ -3768,7 +3829,7 @@ function selectPayAmount(type){
   else if(type==='suggested'){ _payDebtAmount=b.amount||0; highlightPayBtn('pd-sug-btn'); }
   else if(type==='full'){ _payDebtAmount=b.balance||0; highlightPayBtn('pd-full-btn'); }
   else if(type==='custom'){
-    _payDebtAmount=parseFloat($('pd-custom').value)||0;
+    _payDebtAmount=sanitizeNum($('pd-custom').value)||0;
     highlightPayBtn(null);
   }
   updatePayBreakdown(b,_payDebtAmount);
@@ -3796,7 +3857,7 @@ function updatePayBreakdown(b,amount){
 function confirmDebtPayment(){
   const b=data.bills.find(x=>x.id===_payDebtId);if(!b)return;
   const amount=_payDebtType==='custom'
-    ? parseFloat($('pd-custom').value)||0
+    ? sanitizeNum($('pd-custom').value)||0
     : _payDebtAmount;
   const acId=parseInt($('pd-account').value)||0;
   if(!amount||amount<=0){showToast(t('Enter a valid amount'),'error');return;}
@@ -4460,7 +4521,7 @@ function renderBudget(){
       ${amtDisplay}
       <button class="btn btn-secondary btn-sm" onclick="openEditIncome(${i.id})">✏️</button>
       <button class="btn btn-danger btn-sm show-desktop" onclick="deleteItem('income',${i.id})">✕</button>
-    </div></div>`,`deleteItem('income',${i.id})`);
+    </div></div>`,'income',i.id,`openEditIncome(${i.id})`);
   }).join(''): emptyState('💰','No income yet','Add your salary, freelance work, or any other income sources.','+ Add Income',"openModal('income')");
 
   // Money Out -- expenses + bills combined
@@ -4471,7 +4532,7 @@ function renderBudget(){
       <span style="color:var(--red);font-weight:600">${usd(e.amount)}</span>
       <button class="btn btn-secondary btn-sm" onclick="openEditExpense(${e.id})">✏️</button>
       <button class="btn btn-danger btn-sm show-desktop" onclick="deleteItem('expenses',${e.id})">✕</button>
-    </div></div>`,'expenses',e.id));
+    </div></div>`,'expenses',e.id,`openEditExpense(${e.id})`));
 
   const billTypeIcon={bill:'📋',creditcard:'💳',loan:'🏦',promo:'🎁'};
   const billRows=data.bills.map(b=>`
@@ -4824,7 +4885,7 @@ function renderTxns(){
         <button class="btn btn-danger btn-sm show-desktop" onclick="deleteItem('transactions',${tx.id})">✕</button>
       </div>
     </div>`;
-    return wrapSwipeable(rowHtml,'transactions',tx.id);
+    return wrapSwipeable(rowHtml,'transactions',tx.id,`openEditTxn(${tx.id})`);
   }).join('');
   setTimeout(attachSwipes,50);
 }
@@ -8193,38 +8254,8 @@ function populateAutoLogAccountSelect(selId){
 // ── Wire auto-log fields into openModal for expense ──────────
 // Reset auto-log fields when expense modal opens (handled in openModal patch below)
 
-// ── Wire auto-log fields into openEditExpense ────────────────
-const _origOpenEditExpense = openEditExpense;
-function openEditExpense(id){
-  _origOpenEditExpense(id);
-  const e = data.expenses.find(x=>x.id===id);
-  if(!e) return;
-  const chk = $('e-autolog');
-  const wrap = $('autolog-account-wrap');
-  if(chk) chk.checked = !!e.autoLog;
-  if(wrap) wrap.style.display = e.autoLog ? 'block' : 'none';
-  if(e.autoLog) populateAutoLogAccountSelect('e-autolog-account');
-  const sel = $('e-autolog-account');
-  if(sel && e.autoLogAccountId) sel.value = e.autoLogAccountId;
-}
 
-// ── Wire auto-log fields into openEditBill ───────────────────
-const _origOpenEditBill = openEditBill;
-function openEditBill(id){
-  _origOpenEditBill(id);
-  const b = data.bills.find(x=>x.id===id);
-  if(!b) return;
-  const wrap = $('b-autolog-wrap');
-  const chk  = $('b-autolog');
-  const aWrap= $('b-autolog-account-wrap');
-  // Show autolog section if recurring
-  if(wrap) wrap.style.display = (b.recurring && b.recurring!=='No') ? 'block' : 'none';
-  if(chk)  chk.checked = !!b.autoLog;
-  if(aWrap) aWrap.style.display = b.autoLog ? 'block' : 'none';
-  if(b.autoLog) populateAutoLogAccountSelect('b-autolog-account');
-  const sel = $('b-autolog-account');
-  if(sel && b.autoLogAccountId) sel.value = b.autoLogAccountId;
-}
+
 
 
 
