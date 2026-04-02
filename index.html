@@ -149,6 +149,7 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 .overlay.open{display:flex;}
 .modal{background:#15152a;border:1px solid var(--border2);border-radius:20px 20px 0 0;padding:24px 20px 36px;width:100%;max-width:500px;animation:slideUp .22s ease;max-height:92vh;overflow-y:auto;}
 @keyframes slideUp{from{transform:translateY(50px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.5;transform:scale(1.3);}}
 .modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;}
 .modal-title{font-family:var(--font-d);font-size:19px;color:var(--text);}
 .close-btn{background:rgba(255,255,255,.1);border:none;color:var(--text);font-size:14px;cursor:pointer;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
@@ -759,9 +760,13 @@ canvas{width:100%!important;}
 .trend-stat-val{font-size:14px;font-weight:700;margin-top:2px;}
 
 /* ── TRANSACTION NOTES / TAGS ── */
-.txn-note{font-size:10px;color:var(--muted);margin-top:2px;
-  font-style:italic;display:-webkit-box;-webkit-line-clamp:1;
-  -webkit-box-orient:vertical;overflow:hidden;}
+.txn-note-wrap{display:inline-flex;align-items:center;gap:4px;margin-top:3px;cursor:pointer;user-select:none;}
+.txn-note-icon{font-size:11px;opacity:.7;}
+.txn-note-preview{font-size:11px;color:var(--accent2);font-style:italic;opacity:.85;
+  display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;max-width:180px;}
+.txn-note-full{font-size:11px;color:var(--accent2);font-style:italic;opacity:.9;margin-top:3px;
+  background:rgba(108,99,255,.07);border-radius:6px;padding:4px 8px;border-left:2px solid var(--accent2);display:none;}
+.txn-note-full.open{display:block;}
 .txn-tags{display:flex;flex-wrap:wrap;gap:3px;margin-top:3px;}
 .txn-tag{display:inline-block;background:rgba(108,99,255,.12);color:var(--accent2);
   border-radius:4px;padding:1px 6px;font-size:9px;font-weight:700;}
@@ -792,8 +797,6 @@ canvas{width:100%!important;}
 .tag-filter-chip:hover{border-color:var(--accent);}
 
 /* ── TXN NOTE IMPROVED ── */
-.txn-note{font-size:11px;color:var(--accent2);margin-top:3px;
-  font-style:italic;opacity:.85;}
 .txn-tag{display:inline-flex;align-items:center;background:rgba(108,99,255,.12);
   color:var(--accent2);border-radius:12px;padding:1px 8px;
   font-size:10px;font-weight:600;cursor:pointer;border:1px solid rgba(108,99,255,.2);
@@ -951,6 +954,7 @@ canvas{width:100%!important;}
   <button class="nav-item" onclick="show('networth',this)"><span class="ni">🏦</span><span data-i18n="Net Worth">Net Worth</span></button>
   <button class="nav-item" onclick="show('insights',this)"><span class="ni">📈</span><span data-i18n="Insights">Insights</span><span id="insights-badge" class="nav-badge" style="display:none"></span></button>
   <button class="nav-item" onclick="show('cards',this)"><span class="ni">💳</span><span data-i18n="Cards">Cards</span></button>
+  <button class="nav-item" onclick="show('advisor',this)"><span class="ni">🤖</span><span>My Advisor</span></button>
   <button class="nav-item" onclick="show('quick',this)"><span class="ni">⚡</span><span data-i18n="Quick Update">Quick Update</span></button>
   <div id="sidebar-footer">
     <div id="last-saved" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:8px 0;"><span id="ls-dot" style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0;"></span><span id="ls-text" style="font-size:11px;color:#444460;font-weight:400;font-family:-apple-system,sans-serif;">Not saved yet</span></div>
@@ -1044,6 +1048,15 @@ canvas{width:100%!important;}
           <div id="expense-list"></div>
           <div class="total-row" style="color:var(--red)"><span data-i18n="Total">Total</span><span id="expense-total">$0.00</span></div>
         </div>
+      </div>
+
+      <!-- Paycheck Calendar -->
+      <div class="card" id="paycheck-cal-card" style="margin-top:16px;display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <div class="section-label" style="color:var(--green);margin-bottom:0">📅 Upcoming Paychecks</div>
+          <button class="mn-btn" onclick="togglePaycheckCal()" id="paycheck-cal-toggle" style="font-size:11px;padding:4px 10px;border-radius:8px;border:1px solid var(--border2)">▾ Hide</button>
+        </div>
+        <div id="paycheck-cal-body"></div>
       </div>
     </div>
 
@@ -1315,6 +1328,37 @@ canvas{width:100%!important;}
     </div>
 
     <!-- QUICK UPDATE -->
+    <!-- MY ADVISOR -->
+    <div id="advisor" class="section">
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 24px 36px;text-align:center;gap:0">
+        <div style="font-size:64px;margin-bottom:20px;filter:drop-shadow(0 0 24px rgba(108,99,255,.4))">🤖</div>
+        <h2 style="font-size:24px;font-weight:800;color:var(--text);margin-bottom:10px;letter-spacing:-.3px">Your Personal AI Financial Advisor</h2>
+        <p style="font-size:14px;color:var(--muted);line-height:1.7;max-width:320px;margin-bottom:32px">Powered by your real financial data — ask anything about your spending, debt payoff strategy, savings goals, or how to improve your net worth.</p>
+        <div style="background:rgba(108,99,255,.08);border:1px solid rgba(108,99,255,.2);border-radius:16px;padding:20px 24px;max-width:360px;width:100%;margin-bottom:28px">
+          <div style="font-size:11px;font-weight:700;color:var(--accent2);text-transform:uppercase;letter-spacing:.8px;margin-bottom:14px">Coming Soon</div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;align-items:center;gap:10px;text-align:left">
+              <span style="font-size:18px">💬</span>
+              <span style="font-size:13px;color:var(--muted)">"Should I pay off my credit card or build my emergency fund first?"</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;text-align:left">
+              <span style="font-size:18px">📊</span>
+              <span style="font-size:13px;color:var(--muted)">"Where am I overspending compared to last month?"</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;text-align:left">
+              <span style="font-size:18px">🎯</span>
+              <span style="font-size:13px;color:var(--muted)">"How long until I can afford the Japan trip at my current savings rate?"</span>
+            </div>
+          </div>
+        </div>
+        <div style="font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px">
+          <span style="width:8px;height:8px;border-radius:50%;background:var(--accent);display:inline-block;animation:pulse 2s infinite"></span>
+          100% private — your data never leaves this device
+        </div>
+      </div>
+    </div>
+
+    <!-- QUICK UPDATE -->
     <div id="quick" class="section">
       <h2 class="sec-title" style="margin-bottom:6px" data-i18n="Quick Update">Quick Update</h2>
       <div id="quick-alerts"></div>
@@ -1342,6 +1386,7 @@ canvas{width:100%!important;}
           <button class="mn-btn" onclick="shiftTxnMonth(-1)">‹</button>
           <span class="mn-label" id="txn-month-label">--</span>
           <button class="mn-btn" onclick="shiftTxnMonth(1)" id="txn-month-next">›</button>
+          <button id="txn-all-months-btn" class="mn-btn" style="margin-left:8px;font-size:11px;padding:4px 10px;border-radius:8px" onclick="toggleTxnAllMonths()">All</button>
         </div>
         <div class="search-bar">
           <span class="search-icon">🔍</span>
@@ -1473,6 +1518,12 @@ canvas{width:100%!important;}
             <div class="about-card-q">"How do I save for a vacation or emergency fund?"</div>
             <button class="about-card-goto" onclick="show('networth',null);closeSidebar()">Go to Net Worth &#8594;</button>
           </div>
+          <div class="about-card">
+            <div class="about-card-top"><div class="about-card-icon">&#10003;</div><div><div class="about-card-title">Expense Paid Status</div></div></div>
+            <div class="about-card-desc">Tap the ○ button next to any expense in Cash Flow to mark it paid for the month. A green ✓ PAID badge appears and the row dims. Resets automatically on the 1st of each month.</div>
+            <div class="about-card-q">"How do I know which expenses I've already paid this month?"</div>
+            <button class="about-card-goto" onclick="show('budget',null);closeSidebar()">Go to Cash Flow &#8594;</button>
+          </div>
         </div>
       </div>
 
@@ -1481,7 +1532,7 @@ canvas{width:100%!important;}
         <div class="about-cards">
           <div class="about-card">
             <div class="about-card-top"><div class="about-card-icon">&#128257;</div><div><div class="about-card-title">Account Transfers</div></div></div>
-            <div class="about-card-desc">Move money between accounts without it counting as spending. Transfers debit one account and credit another, log in the transaction history with a &#8594; indicator, and are excluded from spending stats.</div>
+            <div class="about-card-desc">Move money between accounts without it counting as spending. Transfers debit one account and credit another, log in the transaction history with a &#8594; indicator, and are excluded from spending stats. Transfers are editable after the fact.</div>
             <div class="about-card-q">"How do I move money to my savings account?"</div>
             <button class="about-card-goto" onclick="show('quick',null);closeSidebar()">Go to Quick Update &#8594;</button>
           </div>
@@ -1489,6 +1540,18 @@ canvas{width:100%!important;}
             <div class="about-card-top"><div class="about-card-icon">&#128185;</div><div><div class="about-card-title">APY Interest Tracking</div></div></div>
             <div class="about-card-desc">Add an APY to any checking or savings account. The account card shows the rate and your projected annual interest earned based on the current balance — updates live as your balance changes.</div>
             <div class="about-card-q">"How much interest will my HYSA earn this year?"</div>
+            <button class="about-card-goto" onclick="show('networth',null);closeSidebar()">Go to Net Worth &#8594;</button>
+          </div>
+          <div class="about-card">
+            <div class="about-card-top"><div class="about-card-icon">&#128662;</div><div><div class="about-card-title">Asset Depreciation</div></div></div>
+            <div class="about-card-desc">When adding a vehicle, enter the purchase date, original value, and annual depreciation rate. The asset card shows the estimated current depreciated value and total loss — so your net worth reflects reality, not what you paid.</div>
+            <div class="about-card-q">"How do I track my car losing value over time?"</div>
+            <button class="about-card-goto" onclick="show('networth',null);closeSidebar()">Go to Net Worth &#8594;</button>
+          </div>
+          <div class="about-card">
+            <div class="about-card-top"><div class="about-card-icon">&#127968;</div><div><div class="about-card-title">Home Equity Tracking</div></div></div>
+            <div class="about-card-desc">Link a property asset to its mortgage loan. The asset card automatically shows your home value, remaining mortgage, and current equity side by side — updates in real time as you make payments.</div>
+            <div class="about-card-q">"How much equity do I have in my house?"</div>
             <button class="about-card-goto" onclick="show('networth',null);closeSidebar()">Go to Net Worth &#8594;</button>
           </div>
           <div class="about-card">
@@ -1512,6 +1575,9 @@ canvas{width:100%!important;}
         <div class="about-tip">&#128161; <strong>Set a default account.</strong> In Net Worth → Accounts, the default account shows a purple DEFAULT badge. Edit any account to change it — all payment modals pre-select it automatically.</div>
         <div class="about-tip">&#128161; <strong>Use transfers for savings contributions.</strong> Moving money to your emergency fund or HYSA? Use the Transfer tile in Quick Update — it moves the balance correctly and won't inflate your spending stats.</div>
         <div class="about-tip">&#128161; <strong>Enter original loan amounts.</strong> When adding a car loan, mortgage, or student loan, fill in the Original Loan Amount field. The Debt Planner will show you exactly how much progress you've made paying it down.</div>
+        <div class="about-tip">&#128161; <strong>Link your mortgage to your home.</strong> In Net Worth → Assets, edit a property asset and select your mortgage loan from the dropdown. Your equity updates automatically every time you make a payment.</div>
+        <div class="about-tip">&#128161; <strong>Mark expenses as paid to stay on top of the month.</strong> Each expense row has a ○ button — tap it after you pay. The green ✓ PAID badge makes it easy to see at a glance what's done vs still outstanding for the month.</div>
+        <div class="about-tip">&#128161; <strong>Schedule loan payments for today to see balance drop immediately.</strong> When you schedule a debt payment and set the due date to today, the loan balance reduces on the next app load — no waiting for tomorrow.</div>
         <div class="about-tip">&#128161; <strong>Undo any delete.</strong> Deleted something by accident? A purple undo bar appears for 8 seconds at the bottom of the screen. Tap it to restore.</div>
         <div class="about-tip">&#128161; <strong>Export before big changes.</strong> Use Settings &rarr; Export to Excel to save a backup before loading demo data or resetting the app.</div>
         <div class="about-tip">&#128161; <strong>The Debt Planner sorts 0% promos last on purpose.</strong> In Avalanche mode, 0% cards go to the bottom - that's correct. Let them ride free while you attack high-APR debt first.</div>
@@ -1719,7 +1785,7 @@ canvas{width:100%!important;}
     <input type="hidden" id="a-id"/>
     <div class="field"><label data-i18n="Asset Name">Asset Name</label><input id="a-name" placeholder="e.g. Chase Savings, 401k, Tesla"/></div>
     <div class="field"><label data-i18n="Category">Category</label>
-      <select id="a-cat">
+      <select id="a-cat" onchange="toggleAssetFields()">
         <option value="cash">💵 Savings / Cash</option>
         <option value="invest">📈 Investments / Stocks</option>
         <option value="property">🏠 Property / Real Estate</option>
@@ -1727,8 +1793,34 @@ canvas{width:100%!important;}
       </select>
     </div>
     <div class="field"><label data-i18n="Current Value ($)">Current Value ($)</label><input id="a-value" type="number" inputmode="decimal" placeholder="0.00"/></div>
+
+    <!-- Depreciation fields (vehicle + property) -->
+    <div id="a-depreciation-wrap">
+      <div class="field-row">
+        <div class="field"><label>Purchase / Appraisal Date</label><input id="a-purchase-date" type="date"/></div>
+        <div class="field"><label>Original Value ($)</label><input id="a-original-value" type="number" inputmode="decimal" placeholder="0.00"/></div>
+      </div>
+      <div class="field" id="a-depr-rate-wrap">
+        <label>Annual Depreciation (%)</label>
+        <input id="a-depr-rate" type="number" inputmode="decimal" placeholder="e.g. 15 for a car" step="0.1"/>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px">Used to estimate current value from purchase date. Typical: car 15–20%, home appreciates (leave blank).</div>
+      </div>
+    </div>
+
+    <!-- Linked mortgage (property only) -->
+    <div class="field" id="a-mortgage-wrap">
+      <label>Linked Mortgage / Loan (optional)</label>
+      <select id="a-linked-bill" style="background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:8px;color:var(--text);font-size:13px;width:100%">
+        <option value="">-- None --</option>
+      </select>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">Links the loan balance so the card shows your equity automatically.</div>
+    </div>
+
     <div class="field"><label data-i18n="Notes (optional)">Notes (optional)</label><input id="a-notes" placeholder="e.g. Estimated market value"/></div>
     <button class="btn btn-primary btn-full" onclick="saveAsset()" data-i18n="Save Asset">Save Asset</button>
+    <div id="asset-delete-wrap" style="display:none;margin-top:10px">
+      <button class="btn btn-danger btn-full" onclick="deleteAssetFromModal()">🗑️ Remove Asset</button>
+    </div>
   </div>
 </div>
 
@@ -2211,6 +2303,7 @@ let insightsTab='categories';
 let txnFilter='All';
 let billSort='date';
 let txnSearch='';
+let txnAllMonths=false;
 let txnMonth='';
 let pinBuffer='';
 
@@ -2660,6 +2753,8 @@ function loadData(){
     runAutoLog();
     // Auto-expire promo APRs
     autoExpirePromos();
+    // Reset stale expense paid flags from previous months
+    resetStaleExpensePaid();
     // Purge obsolete transaction types
     const obsolete=['Extra Payment','Adjustment'];
     data.transactions=data.transactions.filter(t=>!obsolete.includes(t.type));
@@ -2716,6 +2811,7 @@ function confirmReset(){
     updateThemeButtons();
     closeModal('settings');
   const si=$('txn-search');if(si)si.value='';
+  txnAllMonths=false;_updateAllMonthsBtn();
   const sc=$('txn-clear');if(sc)sc.style.display='none';renderAll();updateLastSavedUI();showOnboarding();
     alert('All data has been reset.');
   }
@@ -2779,137 +2875,122 @@ function loadDemoData(skipConfirm){
   data={
     // ── INCOME ─────────────────────────────────────────────────
     income:[
-      {id:1001, source:'Salary - SoftNetworks',  amount:4200, frequency:'Bi-weekly',  date:ago(3),  accountId:8001, actualAmount:4850, actualMonth:new Date().getFullYear()+'-'+String(new Date().getMonth()+1).padStart(2,'0'), lastPayDate:ago(3)},
-      {id:1002, source:'Freelance Tech Support',  amount:650,  frequency:'Monthly',    date:ago(10), accountId:8001},
-      {id:1003, source:'Tax Refund',              amount:1200, frequency:'One-time',   date:ago(20), accountId:8002},
-      {id:1004, source:'Rental Income',           amount:800,  frequency:'Monthly',    date:ago(5),  accountId:8002},
+      // Bi-weekly salary with lastPayDate → powers paycheck calendar
+      // Has actualAmount override this month → shows ACTUAL badge
+      {id:1001, source:'Salary - Main Job',     amount:3200, frequency:'Bi-weekly', date:ago(3),  accountId:8001,
+       lastPayDate:ago(3),
+       actualAmount:3750, actualMonth:new Date().getFullYear()+'-'+String(new Date().getMonth()+1).padStart(2,'0')},
+      // Monthly freelance → shows recurring badge
+      {id:1002, source:'Freelance',              amount:600,  frequency:'Monthly',   date:ago(8),  accountId:8001},
+      // One-time bonus → no badge
+      {id:1003, source:'Tax Refund',             amount:1100, frequency:'One-time',  date:ago(15), accountId:8002},
     ],
 
     // ── EXPENSES ───────────────────────────────────────────────
     expenses:[
-      {id:2001, category:'Housing',       description:'Rent',                     amount:1450, frequency:'Monthly',  date:ago(1),  accountId:8001, autoLog:true, autoLogAccountId:8001},
-      {id:2002, category:'Transport',     description:'Car insurance',            amount:187,  frequency:'Monthly',  date:ago(5),  accountId:8001},
-      {id:2003, category:'Food',          description:'Grocery run - ShopRite',   amount:280,  frequency:'Monthly',  date:ago(4),  accountId:8001},
-      {id:2004, category:'Utilities',     description:'Electric & gas',           amount:145,  frequency:'Monthly',  date:ago(2),  accountId:8001},
-      {id:2005, category:'Subscriptions', description:'Netflix, Spotify, iCloud', amount:42,   frequency:'Monthly',  date:ago(8),  accountId:8001},
-      {id:2006, category:'Healthcare',    description:'Health insurance copay',   amount:95,   frequency:'Monthly',  date:ago(6),  accountId:8001},
-      {id:2007, category:'Entertainment', description:'Concert tickets',          amount:185,  frequency:'One-time', date:ago(9),  accountId:8001},
-      {id:2008, category:'Savings',       description:'Emergency fund transfer',  amount:300,  frequency:'Monthly',  date:ago(1),  accountId:8002},
-      {id:2009, category:'Dining',        description:'Dinner out - various',     amount:210,  frequency:'Monthly',  date:ago(3),  accountId:8001},
-      {id:2010, category:'Shopping',      description:'Clothing & household',     amount:320,  frequency:'One-time', date:ago(7),  accountId:8001},
+      // auto-log → shows auto badge
+      {id:2001, category:'Housing',       description:'Rent',                  amount:1450, frequency:'Monthly',  date:ago(1),  accountId:8001, autoLog:true, autoLogAccountId:8001},
+      // paid this month → shows ✓ PAID badge
+      {id:2002, category:'Utilities',     description:'Electric & gas',         amount:140,  frequency:'Monthly',  date:ago(4),  accountId:8001,
+       paidMonth: new Date().getFullYear()+'-'+String(new Date().getMonth()+1).padStart(2,'0')},
+      {id:2003, category:'Food',          description:'Grocery budget',         amount:280,  frequency:'Monthly',  date:ago(3),  accountId:8001},
+      {id:2004, category:'Subscriptions', description:'Netflix, Spotify',       amount:38,   frequency:'Monthly',  date:ago(6),  accountId:8001},
+      {id:2005, category:'Healthcare',    description:'Health insurance copay', amount:95,   frequency:'Monthly',  date:ago(5),  accountId:8001},
+      {id:2006, category:'Transport',     description:'Gas & tolls',            amount:120,  frequency:'Monthly',  date:ago(2),  accountId:8001},
     ],
 
     // ── BILLS ──────────────────────────────────────────────────
     bills:[
-      // Due this week - shows on 7-day timeline + smart bill reminder
-      {id:3001, name:'Rent',              amount:1450, dueDate:dt(2),           recurring:'Monthly', status:'Pending',   btype:'bill',       balance:0,     apr:0,     creditLimit:0,     scheduledAmount:null, scheduledAccountId:null},
-      {id:3006, name:'Chase Sapphire',    amount:85,   dueDate:dt(4),           recurring:'Monthly', status:'Pending',   btype:'creditcard', balance:4250,  apr:22.99, creditLimit:10000, scheduledAmount:null, scheduledAccountId:null, originalBalance:5800, revolvingBalance:2801},  // 4250 - 999(iPhone) - 450(Dyson)
-      {id:3008, name:'Car Loan - Honda',  amount:340,  dueDate:dt(3),           recurring:'Monthly', status:'Pending',   btype:'loan',       balance:9800,  apr:7.49,  creditLimit:0,     scheduledAmount:null, scheduledAccountId:null, originalBalance:14000, originalLoanAmount:14000},
-      // Overdue - shows red badge + alert
-      {id:3009, name:'Capital One Card',  amount:35,   dueDate:ago(1),          recurring:'Monthly', status:'Overdue',   btype:'creditcard', balance:1150,  apr:26.99, creditLimit:3000,  scheduledAmount:null, scheduledAccountId:null, originalBalance:2200, revolvingBalance:870},  // 1150 - 280(Headphones)
-      // Scheduled - shows blue badge
-      {id:3002, name:'Electric & Gas',    amount:145,  dueDate:dt(5),           recurring:'Monthly', status:'Scheduled', btype:'bill',       balance:0,     apr:0,     creditLimit:0,     scheduledAmount:145,  scheduledAccountId:8001},
-      // Paid - shows checkmark animation
-      {id:3005, name:'Phone Bill',        amount:65,   dueDate:ago(2),          recurring:'Monthly', status:'Paid',      btype:'bill',       balance:0,     apr:0,     creditLimit:0,     scheduledAmount:null, scheduledAccountId:null},
-      // Next month bills - shows month divider
-      {id:3003, name:'Internet - Xfinity',amount:79,  dueDate:nextMonth(1,10), recurring:'Monthly', status:'Pending',   btype:'bill',       balance:0,     apr:0,     creditLimit:0,     scheduledAmount:null, scheduledAccountId:null},
-      {id:3004, name:'Car Insurance',     amount:187,  dueDate:nextMonth(1,8),  recurring:'Monthly', status:'Pending',   btype:'bill',       balance:0,     apr:0,     creditLimit:0,     scheduledAmount:null, scheduledAccountId:null},
-      {id:3007, name:'Student Loan',      amount:210,  dueDate:nextMonth(1,15), recurring:'Monthly', status:'Scheduled', btype:'loan',       balance:18400, apr:5.75,  creditLimit:0,     scheduledAmount:210,  scheduledAccountId:8001, originalBalance:24000, originalLoanAmount:24000},
-      // Additional debt for Debt Planner showcase
-      {id:3010, name:'Amex Platinum',     amount:120,  dueDate:nextMonth(1,20), recurring:'Monthly', status:'Pending',   btype:'creditcard', balance:6800,  apr:24.99, creditLimit:15000, scheduledAmount:null, scheduledAccountId:null, originalBalance:8500},
+      // Pending — shows on 7-day timeline
+      {id:3001, name:'Phone Bill',        amount:65,   dueDate:dt(3),           recurring:'Monthly', status:'Pending',   btype:'bill',       balance:0,    apr:0,     creditLimit:0,    scheduledAmount:null, scheduledAccountId:null},
+      // Scheduled — blue badge
+      {id:3002, name:'Internet',          amount:79,   dueDate:dt(5),           recurring:'Monthly', status:'Scheduled', btype:'bill',       balance:0,    apr:0,     creditLimit:0,    scheduledAmount:79,   scheduledAccountId:8001},
+      // Paid — checkmark
+      {id:3003, name:'Car Insurance',     amount:187,  dueDate:ago(3),          recurring:'Monthly', status:'Paid',      btype:'bill',       balance:0,    apr:0,     creditLimit:0,    scheduledAmount:null, scheduledAccountId:null},
+      // Overdue — red alert
+      {id:3004, name:'Gym Membership',    amount:45,   dueDate:ago(2),          recurring:'Monthly', status:'Overdue',   btype:'bill',       balance:0,    apr:0,     creditLimit:0,    scheduledAmount:null, scheduledAccountId:null},
+      // Credit card — shows revolving + promo split, APR badge, utilization
+      {id:3005, name:'Chase Sapphire',    amount:85,   dueDate:dt(4),           recurring:'Monthly', status:'Pending',   btype:'creditcard', balance:2801, apr:22.99, creditLimit:10000,scheduledAmount:null, scheduledAccountId:null, originalBalance:5800, revolvingBalance:2801},
+      // Loan with original amount → payoff progress bar in Debt Planner
+      {id:3006, name:'Car Loan',          amount:340,  dueDate:dt(2),           recurring:'Monthly', status:'Pending',   btype:'loan',       balance:9800, apr:7.49,  creditLimit:0,    scheduledAmount:null, scheduledAccountId:null, originalBalance:14000, originalLoanAmount:14000},
+      // Loan with same-day scheduled → processes immediately
+      {id:3007, name:'Student Loan',      amount:210,  dueDate:today(),         recurring:'Monthly', status:'Scheduled', btype:'loan',       balance:18400,apr:5.75,  creditLimit:0,    scheduledAmount:210,  scheduledAccountId:8001, originalBalance:24000, originalLoanAmount:24000},
+      // Next-month bills → month divider in calendar view
+      {id:3008, name:'Rent',              amount:1450, dueDate:nextMonth(1,1),  recurring:'Monthly', status:'Pending',   btype:'bill',       balance:0,    apr:0,     creditLimit:0,    scheduledAmount:null, scheduledAccountId:null},
     ],
 
-    // ── INACTIVE REMINDER CARDS ────────────────────────────────
+    // ── INACTIVE REMINDER CARD ─────────────────────────────────
     cards:[
-      {id:4001, name:'Discover it Card', last4:'4823', reminderDays:90, nextReminder:dt(75),  notes:'Use for online purchases'},
-      {id:4002, name:'Amex Gold (old)',  last4:'9901', reminderDays:90, nextReminder:ago(5),  notes:'Keep open for credit age'},
+      {id:4001, name:'Discover it', last4:'4823', reminderDays:90, nextReminder:ago(5), notes:'Keep open for credit age'},
     ],
 
-    // ── TRANSACTIONS (3 months - showcases anomaly detection) ──
+    // ── TRANSACTIONS (3 months → anomaly detection + dual chart) ──
     transactions:[
-      // ── 2 months ago (lower baseline for anomalies) ──────────
-      {id:5001, description:'ATM - Chase branch',       amount:200,  type:'Withdrawal',  date:monthAgo(2,15), accountId:8001, methodLabel:'Chase Checking', tags:['cash','atm']},
-      {id:5050, description:'Whole Foods',              amount:95,   type:'Purchase',    date:monthAgo(2,8),  cardId:3006, accountId:0, category:'Food',  tags:['groceries'], note:'Weekly grocery run',          methodLabel:'Chase Sapphire'},
-      {id:5051, description:'Shell Gas Station',        amount:45,   type:'Purchase',    date:monthAgo(2,12), cardId:3006, accountId:0, category:'Transport',     methodLabel:'Chase Sapphire'},
-      {id:5052, description:'Netflix',                  amount:18,   type:'Purchase',    date:monthAgo(2,5),  cardId:3006, accountId:0, category:'Subscriptions', methodLabel:'Chase Sapphire'},
-      {id:5053, description:'Chipotle',                 amount:32,   type:'Purchase',    date:monthAgo(2,18), cardId:3009, accountId:0, category:'Dining',        methodLabel:'Capital One Card'},
-      {id:5054, description:'Target - household',       amount:68,   type:'Purchase',    date:monthAgo(2,20), cardId:3006, accountId:0, category:'Shopping',      methodLabel:'Chase Sapphire'},
-      {id:5055, description:'AMC Theaters',             amount:28,   type:'Purchase',    date:monthAgo(2,22), cardId:3009, accountId:0, category:'Entertainment', methodLabel:'Capital One Card'},
-      {id:5056, description:'Chase Sapphire payment',   amount:200,  type:'Debt Payment',date:monthAgo(2,25), accountId:8001, cardId:3006, methodLabel:'Chase Checking'},
-      // ── Last month (moderate spending) ───────────────────────
-      {id:5002, description:'ATM - Walgreens',          amount:80,   type:'Withdrawal',  date:monthAgo(1,3),  accountId:8001, methodLabel:'Chase Checking'},
-      {id:5060, description:'Trader Joes',              amount:145,  type:'Purchase',    date:monthAgo(1,5),  cardId:3006, accountId:0, category:'Food',          methodLabel:'Chase Sapphire'},
-      {id:5061, description:'Uber Eats',                amount:55,   type:'Purchase',    date:monthAgo(1,8),  cardId:3009, accountId:0, category:'Dining',        methodLabel:'Capital One Card'},
-      {id:5062, description:'Netflix annual',           amount:18,   type:'Purchase',    date:monthAgo(1,10), cardId:3006, accountId:0, category:'Subscriptions', methodLabel:'Chase Sapphire'},
-      {id:5063, description:'Shell Gas Station',        amount:52,   type:'Purchase',    date:monthAgo(1,12), cardId:3006, accountId:0, category:'Transport',     methodLabel:'Chase Sapphire'},
-      {id:5064, description:'Capital One payment',      amount:150,  type:'Debt Payment',date:monthAgo(1,20), accountId:8001, cardId:3009, methodLabel:'Chase Checking'},
-      {id:5065, description:'Student Loan payment',     amount:210,  type:'Debt Payment',date:monthAgo(1,15), accountId:8001, methodLabel:'Chase Checking'},
-      {id:5066, description:'Phone Bill (auto)',         amount:65,   type:'Bill Payment',date:monthAgo(1,2),  accountId:8001, methodLabel:'Chase Checking', tags:['recurring']},
-      {id:5067, description:'Broadway show tickets',    amount:95,   type:'Purchase',    date:monthAgo(1,14), cardId:3006, accountId:0, category:'Entertainment', methodLabel:'Chase Sapphire'},
-      {id:5068, description:'H&M clothing',             amount:88,   type:'Purchase',    date:monthAgo(1,18), cardId:3009, accountId:0, category:'Shopping',      methodLabel:'Capital One Card'},
-      // ── This month (higher - triggers anomaly detection) ──────
-      // Food up 40% vs avg - yellow anomaly
-      {id:5010, description:'Whole Foods',              amount:180,  type:'Purchase',    date:ago(3),  cardId:3006, accountId:0, category:'Food',          methodLabel:'Chase Sapphire'},
-      {id:5011, description:'Costco - groceries',       amount:160,  type:'Purchase',    date:ago(2),  accountId:8001, category:'Food',          methodLabel:'Chase Checking'},
-      // Entertainment up 60% - red anomaly
-      {id:5012, description:'Taylor Swift Concert',     amount:280,  type:'Purchase',    date:ago(8),  cardId:3006, accountId:0, category:'Entertainment', methodLabel:'Chase Sapphire'},
-      {id:5013, description:'AMC Theaters',             amount:52,   type:'Purchase',    date:ago(5),  cardId:3009, accountId:0, category:'Entertainment', methodLabel:'Capital One Card'},
-      // Dining up 50% - red anomaly
-      {id:5020, description:'Nobu - dinner',            amount:180,  type:'Purchase',    date:ago(6),  cardId:3006, accountId:0, category:'Dining',        methodLabel:'Chase Sapphire'},
-      {id:5021, description:'Dominos Pizza',            amount:38,   type:'Purchase',    date:ago(7),  cardId:3009, accountId:0, category:'Dining',        methodLabel:'Capital One Card'},
-      // Transport normal
-      {id:5031, description:'NJ Transit pass',          amount:89,   type:'Purchase',    date:ago(14), accountId:8001, category:'Transport',     methodLabel:'Chase Checking'},
-      // Bill + debt payments
-      {id:5040, description:'Phone Bill (auto)',         amount:65,   type:'Bill Payment',date:ago(2),  accountId:8001, methodLabel:'Chase Checking'},
-      {id:5041, description:'Car Loan payment',         amount:340,  type:'Debt Payment',date:ago(5),  accountId:8001, cardId:0,    methodLabel:'Chase Checking'},
-      {id:5042, description:'ATM - Chase branch',       amount:100,  type:'Withdrawal',  date:ago(4),  accountId:8001, methodLabel:'Chase Checking'},
-      {id:5043, description:'CVS Pharmacy',             amount:45,   type:'Purchase',    date:ago(11), cardId:3006, accountId:0, category:'Healthcare',    methodLabel:'Chase Sapphire'},
-      // Promo purchases showcase
-      {id:5080, description:'iPhone 15 Pro - Apple',    amount:999,  type:'Purchase',    date:monthAgo(1,5), cardId:3006, accountId:0, category:'Electronics', methodLabel:'Chase Sapphire',
+      // ── 2 months ago (baseline) ──────────────────────────────
+      {id:5001, description:'Whole Foods',        amount:90,  type:'Purchase',    date:monthAgo(2,8),  cardId:3005, accountId:0, category:'Food',          methodLabel:'Chase Sapphire'},
+      {id:5002, description:'Shell Gas',          amount:48,  type:'Purchase',    date:monthAgo(2,12), cardId:3005, accountId:0, category:'Transport',     methodLabel:'Chase Sapphire'},
+      {id:5003, description:'AMC Theaters',       amount:30,  type:'Purchase',    date:monthAgo(2,20), cardId:3005, accountId:0, category:'Entertainment', methodLabel:'Chase Sapphire'},
+      {id:5004, description:'ATM',                amount:100, type:'Withdrawal',  date:monthAgo(2,15), accountId:8001, methodLabel:'Chase Checking'},
+      // ── Last month (moderate) ────────────────────────────────
+      {id:5005, description:'Trader Joes',        amount:110, type:'Purchase',    date:monthAgo(1,6),  cardId:3005, accountId:0, category:'Food',          methodLabel:'Chase Sapphire'},
+      {id:5006, description:'Uber Eats',          amount:42,  type:'Purchase',    date:monthAgo(1,10), cardId:3005, accountId:0, category:'Dining',        methodLabel:'Chase Sapphire'},
+      {id:5007, description:'Shell Gas',          amount:55,  type:'Purchase',    date:monthAgo(1,14), cardId:3005, accountId:0, category:'Transport',     methodLabel:'Chase Sapphire'},
+      {id:5008, description:'ATM',                amount:80,  type:'Withdrawal',  date:monthAgo(1,5),  accountId:8001, methodLabel:'Chase Checking'},
+      {id:5009, description:'Car Loan payment',   amount:340, type:'Debt Payment',date:monthAgo(1,20), accountId:8001, methodLabel:'Chase Checking'},
+      {id:5010, description:'Phone Bill (auto)',  amount:65,  type:'Bill Payment', date:monthAgo(1,3), accountId:8001, methodLabel:'Chase Checking'},
+      // ── This month (anomalies: Food +55%, Entertainment +100%) ─
+      {id:5011, description:'Whole Foods',        amount:180, type:'Purchase',    date:ago(3),  cardId:3005, accountId:0, category:'Food',          methodLabel:'Chase Sapphire'},
+      {id:5012, description:'Costco',             amount:155, type:'Purchase',    date:ago(2),  accountId:8001, category:'Food',          methodLabel:'Chase Checking'},
+      {id:5013, description:'Concert tickets',    amount:220, type:'Purchase',    date:ago(7),  cardId:3005, accountId:0, category:'Entertainment', methodLabel:'Chase Sapphire', note:'Taylor Swift - Section 104'},
+      {id:5014, description:'NJ Transit pass',    amount:89,  type:'Purchase',    date:ago(10), accountId:8001, category:'Transport',     methodLabel:'Chase Checking'},
+      {id:5015, description:'CVS Pharmacy',       amount:35,  type:'Purchase',    date:ago(9),  cardId:3005, accountId:0, category:'Healthcare',    methodLabel:'Chase Sapphire', note:'Prescription refill'},
+      // Account transfer → shows green tint + excluded from spending
+      {id:5016, description:'Transfer → High-Yield Savings', amount:500, type:'Transfer', date:ago(5), accountId:8001, toAccountId:8002, methodLabel:'Chase Checking', note:'Monthly savings contribution'},
+      // Promo purchases → showcase promo tracker on Chase Sapphire
+      {id:5080, description:'iPhone 15 Pro',      amount:999, type:'Purchase',    date:monthAgo(1,5), cardId:3005, accountId:0, category:'Electronics', methodLabel:'Chase Sapphire',
         promoType:'installment', promoMonths:24, promoApr:0,
         promoEnd:(()=>{const d=new Date();d.setMonth(d.getMonth()+23);return d.toISOString().split('T')[0];})(),
         monthlyRequired:41.63},
-      {id:5081, description:'PayPal - Dyson Vacuum',    amount:450,  type:'Purchase',    date:ago(45),       cardId:3006, accountId:0, category:'Shopping',    methodLabel:'Chase Sapphire',
+      {id:5081, description:'Dyson Vacuum',       amount:450, type:'Purchase',    date:ago(45),       cardId:3005, accountId:0, category:'Shopping',    methodLabel:'Chase Sapphire',
         promoType:'deferred', promoMonths:6, promoApr:29.99,
         promoEnd:(()=>{const d=new Date();d.setDate(d.getDate()+(180-45));return d.toISOString().split('T')[0];})(),
         monthlyRequired:75},
-      {id:5082, description:'PayPal - Sony Headphones', amount:280,  type:'Purchase',    date:ago(10),       cardId:3009, accountId:0, category:'Electronics', methodLabel:'Capital One Card',
-        promoType:'deferred', promoMonths:6, promoApr:26.99,
-        promoEnd:(()=>{const d=new Date();d.setMonth(d.getMonth()+6);d.setDate(d.getDate()-10);return d.toISOString().split('T')[0];})(),
-        monthlyRequired:46.67},
     ],
 
     // ── ASSETS ─────────────────────────────────────────────────
     assets:[
-      {id:6001, name:'Fidelity 401k',        category:'invest',   value:28500,  notes:'Employer matched - 6%'},
-      {id:6002, name:'Tesla Model 3',         category:'vehicle',  value:28000,  notes:'2022, estimated KBB'},
-      {id:6003, name:'Condo - Jersey City',   category:'property', value:310000, notes:'Estimated Zillow value'},
-      {id:6004, name:'Robinhood Portfolio',   category:'invest',   value:4800,   notes:'Index funds'},
+      // Investments — no extra fields needed
+      {id:6001, name:'Fidelity 401k',        category:'invest',   value:31000, notes:'Employer matched 6%', purchaseDate:null, originalValue:0, depreciationRate:0, linkedBillId:0},
+      // Vehicle — shows depreciation estimate
+      {id:6002, name:'Honda Civic 2021',      category:'vehicle',  value:18000, notes:'KBB estimate',
+       purchaseDate:(()=>{const d=new Date();d.setFullYear(d.getFullYear()-3);return d.toISOString().split('T')[0];})(),
+       originalValue:26000, depreciationRate:15, linkedBillId:0},
+      // Property linked to Car Loan (id 3006) → shows equity panel
+      {id:6003, name:'Jersey City Condo',     category:'property', value:320000, notes:'Zillow estimate',
+       purchaseDate:(()=>{const d=new Date();d.setFullYear(d.getFullYear()-4);return d.toISOString().split('T')[0];})(),
+       originalValue:275000, depreciationRate:0, linkedBillId:3006},
+      {id:6004, name:'Robinhood Portfolio',   category:'invest',   value:5200,  notes:'Index funds', purchaseDate:null, originalValue:0, depreciationRate:0, linkedBillId:0},
     ],
 
-    // ── BUDGET TARGETS (showcase velocity + drill-down) ─────────
+    // ── BUDGET TARGETS ─────────────────────────────────────────
     targets:[
       {id:7001, type:'category', category:'Food',          amount:350},
-      {id:7002, type:'category', category:'Entertainment', amount:150},
-      {id:7003, type:'category', category:'Transport',     amount:280},
-      {id:7004, type:'category', category:'Dining',        amount:180},
-      {id:7005, type:'category', category:'Subscriptions', amount:60},
-      {id:7006, type:'card',     cardId:3006,              amount:400},
-      {id:7007, type:'card',     cardId:3009,              amount:150},
+      {id:7002, type:'category', category:'Entertainment', amount:120},
+      {id:7003, type:'category', category:'Transport',     amount:200},
+      {id:7004, type:'card',     cardId:3005,              amount:400},
     ],
 
-    // ── SAVINGS GOALS ──────────────────────────────────────────────
+    // ── SAVINGS GOALS ──────────────────────────────────────────
     goals:[
-      {id:9001, name:'Emergency Fund',  target:15000, date:nextMonth(8,1),  accountId:8002, saved:8500, notes:'3-6 months expenses', createdAt:monthAgo(3,1)},
-      {id:9002, name:'Vacation - Japan',target:4500,  date:nextMonth(10,1), accountId:0,    saved:800,  notes:'Flights + hotel + spending', createdAt:monthAgo(2,1)},
-      {id:9003, name:'New MacBook',     target:2499,  date:nextMonth(4,1),  accountId:0,    saved:2499, notes:'Fully funded!', createdAt:monthAgo(6,1)},
+      {id:9001, name:'Emergency Fund', target:15000, date:nextMonth(6,1),  accountId:8002, saved:9200, notes:'6 months expenses', createdAt:monthAgo(4,1)},
+      {id:9002, name:'Japan Trip',     target:4500,  date:nextMonth(12,1), accountId:0,    saved:900,  notes:'Flights + hotels + fun', createdAt:monthAgo(2,1)},
     ],
 
-    // ── ACCOUNTS ───────────────────────────────────────────────
+    // ── ACCOUNTS (with APY on savings) ─────────────────────────
     accounts:[
-      {id:8001, name:'Chase Checking',      type:'checking', balance:4250, notes:'Primary account', isDefault:true},
-      {id:8002, name:'Wells Fargo Savings', type:'savings',  balance:8500, notes:'Emergency fund'},
-      {id:8003, name:'Cash Wallet',         type:'cash',     balance:320,  notes:''},
+      {id:8001, name:'Chase Checking',      type:'checking', balance:5100, notes:'Primary',        isDefault:true,  apy:0},
+      {id:8002, name:'Marcus Savings',      type:'savings',  balance:9200, notes:'Emergency fund', isDefault:false, apy:4.6},
+      {id:8003, name:'Cash Wallet',         type:'cash',     balance:120,  notes:'',              isDefault:false, apy:0},
     ]
   };
 
@@ -2940,6 +3021,7 @@ function loadDemoData(skipConfirm){
   txnFilter='All';
   billSort='date';
   txnSearch='';
+  txnAllMonths=false;
   txnMonth=today().slice(0,7);
   insightsTab='categories';
   closeModal('settings');
@@ -3034,6 +3116,7 @@ function openTransferModal(){
   if(defId) $('tr-from').value=defId;
   $('tr-amount').value='';$('tr-date').value=today();$('tr-note').value='';
   $('tr-overdraft-warn').style.display='none';
+  delete $('modal-transfer').dataset.editId;
   $('modal-transfer').classList.add('open');
   setTimeout(()=>$('tr-amount').focus(),260);
 }
@@ -3061,13 +3144,26 @@ function saveTransfer(){
   const fromAcc=(data.accounts||[]).find(a=>a.id===fromId);
   const toAcc=(data.accounts||[]).find(a=>a.id===toId);
   if(!fromAcc||!toAcc)return;
+
+  // Edit mode — reverse the original transfer first
+  const editId=$('modal-transfer').dataset.editId;
+  if(editId){
+    const orig=data.transactions.find(tx=>tx.id===parseInt(editId));
+    if(orig){
+      const origFrom=(data.accounts||[]).find(a=>a.id===orig.accountId);
+      const origTo=(data.accounts||[]).find(a=>a.id===orig.toAccountId);
+      if(origFrom) origFrom.balance=parseFloat((origFrom.balance+orig.amount).toFixed(2));
+      if(origTo)   origTo.balance=parseFloat((origTo.balance-orig.amount).toFixed(2));
+      data.transactions=data.transactions.filter(tx=>tx.id!==parseInt(editId));
+    }
+    delete $('modal-transfer').dataset.editId;
+  }
+
   if(amt>fromAcc.balance){
     if(!confirm('Warning: this transfer of '+usd(amt)+' would overdraw '+fromAcc.name+' by '+usd(amt-fromAcc.balance)+'. Continue?'))return;
   }
-  // Move money
   fromAcc.balance=parseFloat((fromAcc.balance-amt).toFixed(2));
   toAcc.balance=parseFloat((toAcc.balance+amt).toFixed(2));
-  // Log as Transfer transaction (excluded from spending stats)
   data.transactions.push({
     id:Date.now(),
     description:'Transfer → '+toAcc.name,
@@ -3080,7 +3176,7 @@ function saveTransfer(){
     note
   });
   closeModal('transfer');saveData();renderAll();
-  showToast('Transfer saved!');
+  showToast(editId?'Transfer updated!':'Transfer saved!');
 }
 
 // ── NEW PURCHASE ──────────────────────────────────
@@ -3248,15 +3344,52 @@ function renderNetWorth(){
   const catIcon={cash:'💵',invest:'📈',property:'🏠',vehicle:'🚗'};
   const catLabel={cash:'Savings / Cash',invest:'Investments',property:'Property',vehicle:'Vehicle'};
   const aList=$('asset-list');
-  if(aList) aList.innerHTML=assets.length?assets.map(a=>`
-    <div class="row"><div>
-      <div class="row-label">${catIcon[a.category]||'💼'} ${a.name}</div>
-      <div class="row-sub">${catLabel[a.category]||a.category}${a.notes?' - '+a.notes:''}</div>
-    </div><div class="row-actions">
-      <span style="color:var(--green);font-weight:600">${usd(a.value)}</span>
-      <button class="btn btn-secondary btn-sm" onclick="openEditAsset(${a.id})">✏️</button>
-      <button class="btn btn-danger btn-sm" onclick="deleteItem('assets',${a.id})">✕</button>
-    </div></div>`).join(''):emptyState('📈','No assets yet','Add investments, property, and vehicles to see your full net worth.','+ Add Asset',"openModal('asset')");
+  if(aList) aList.innerHTML=assets.length?assets.map(a=>{
+    // Depreciation estimate
+    let deprHtml='';
+    if((a.category==='vehicle')&&a.originalValue>0&&a.purchaseDate&&a.depreciationRate>0){
+      const years=(Date.now()-new Date(a.purchaseDate))/(365.25*24*3600*1000);
+      const estimated=parseFloat((a.originalValue*Math.pow(1-a.depreciationRate/100,years)).toFixed(2));
+      const lost=a.originalValue-estimated;
+      deprHtml=`<div style="font-size:11px;color:var(--muted);margin-top:4px">
+        Purchased ${fmtDate(a.purchaseDate)} · Est. depreciated: <span style="color:var(--red)">${usd(Math.max(0,estimated))}</span>
+        <span style="color:var(--muted);margin-left:4px">(~${usd(lost)} lost)</span>
+      </div>`;
+    }
+    if((a.category==='property')&&a.originalValue>0&&a.purchaseDate){
+      const years=(Date.now()-new Date(a.purchaseDate))/(365.25*24*3600*1000);
+      deprHtml=`<div style="font-size:11px;color:var(--muted);margin-top:4px">
+        Purchased ${fmtDate(a.purchaseDate)} · ${years.toFixed(1)} yr${years>=2?'s':''} ago · Original: ${usd(a.originalValue)}
+      </div>`;
+    }
+    // Home equity
+    let equityHtml='';
+    if(a.category==='property'&&a.linkedBillId){
+      const loan=data.bills.find(b=>b.id===a.linkedBillId);
+      if(loan){
+        const equity=a.value-(loan.balance||0);
+        equityHtml=`<div style="display:flex;gap:16px;margin-top:6px;padding:6px 10px;background:rgba(255,255,255,.04);border-radius:8px;flex-wrap:wrap">
+          <span style="font-size:11px;color:var(--muted)">🏠 Value: <strong style="color:var(--text)">${usd(a.value)}</strong></span>
+          <span style="font-size:11px;color:var(--muted)">🏦 Mortgage: <strong style="color:var(--red)">${usd(loan.balance||0)}</strong></span>
+          <span style="font-size:11px;color:var(--muted)">💰 Equity: <strong style="color:${equity>=0?'var(--green)':'var(--red)'}">${usd(equity)}</strong></span>
+        </div>`;
+      }
+    }
+    return `<div class="row" style="flex-direction:column;align-items:stretch;gap:0">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div class="row-label">${catIcon[a.category]||'💼'} ${a.name}</div>
+          <div class="row-sub">${catLabel[a.category]||a.category}${a.notes?' · '+a.notes:''}</div>
+        </div>
+        <div class="row-actions">
+          <span style="color:var(--green);font-weight:600">${usd(a.value)}</span>
+          <button class="btn btn-secondary btn-sm" onclick="openEditAsset(${a.id})">✏️</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteItem('assets',${a.id})">✕</button>
+        </div>
+      </div>
+      ${deprHtml}${equityHtml}
+    </div>`;
+  }).join(''):emptyState('📈','No assets yet','Add investments, property, and vehicles to see your full net worth.','+ Add Asset',"openModal('asset')");
   // Dashboard accounts widget
   const wrap=$('d-accounts-wrap'),grid=$('d-accounts');
   if(wrap&&grid){
@@ -3325,21 +3458,58 @@ function removePin(){
 }
 
 // ── ASSETS ───────────────────────────────────────
+function toggleAssetFields(){
+  const cat=$('a-cat').value;
+  const showDepr=cat==='vehicle'||cat==='property';
+  const showMortgage=cat==='property';
+  const showDeprRate=cat==='vehicle'; // property appreciates, so hide rate for it
+  if($('a-depreciation-wrap')) $('a-depreciation-wrap').style.display=showDepr?'block':'none';
+  if($('a-mortgage-wrap')) $('a-mortgage-wrap').style.display=showMortgage?'block':'none';
+  if($('a-depr-rate-wrap')) $('a-depr-rate-wrap').style.display=showDeprRate?'block':'none';
+  if(showMortgage){
+    const loans=data.bills.filter(b=>b.btype==='loan'&&b.balance>0);
+    const curVal=$('a-linked-bill').value;
+    $('a-linked-bill').innerHTML='<option value="">-- None --</option>'+
+      loans.map(b=>`<option value="${b.id}">${b.name} (${usd(b.balance)} remaining)</option>`).join('');
+    if(curVal) $('a-linked-bill').value=curVal;
+  }
+}
+
 function openEditAsset(id){
   const a=data.assets.find(x=>x.id===id);if(!a)return;
   $('asset-modal-title').textContent='Edit Asset';
   $('a-id').value=a.id;$('a-name').value=a.name;$('a-cat').value=a.category;
   $('a-value').value=a.value;$('a-notes').value=a.notes||'';
+  $('a-purchase-date').value=a.purchaseDate||'';
+  $('a-original-value').value=a.originalValue||'';
+  $('a-depr-rate').value=a.depreciationRate||'';
+  toggleAssetFields();
+  if($('a-linked-bill')) $('a-linked-bill').value=a.linkedBillId||'';
+  $('asset-delete-wrap').style.display='block';
   $('modal-asset').classList.add('open');
 }
+
 function saveAsset(){
   const name=$('a-name').value.trim(),cat=$('a-cat').value,val=parseFloat($('a-value').value),notes=$('a-notes').value.trim();
   if(!name||!val)return;
+  const purchaseDate=$('a-purchase-date').value||null;
+  const originalValue=parseFloat($('a-original-value').value)||0;
+  const depreciationRate=parseFloat($('a-depr-rate').value)||0;
+  const linkedBillId=(cat==='property'&&$('a-linked-bill').value)?parseInt($('a-linked-bill').value):0;
   const eid=parseInt($('a-id').value);
-  const item={id:eid||Date.now(),name,category:cat,value:val,notes};
+  const item={id:eid||Date.now(),name,category:cat,value:val,notes,purchaseDate,originalValue,depreciationRate,linkedBillId};
   data.assets=eid?data.assets.map(a=>a.id===eid?item:a):[...data.assets,item];
-  $('a-name').value='';$('a-value').value='';$('a-notes').value='';$('a-id').value='';
+  $('a-name').value='';$('a-value').value='';$('a-notes').value='';
+  $('a-purchase-date').value='';$('a-original-value').value='';$('a-depr-rate').value='';$('a-id').value='';
+  $('asset-delete-wrap').style.display='none';
   closeModal('asset');saveData();renderAll();
+}
+
+function deleteAssetFromModal(){
+  const id=parseInt($('a-id').value);
+  if(!id)return;
+  closeModal('asset');
+  deleteItem('assets',id);
 }
 
 // ── BUDGET TARGETS ────────────────────────────────
@@ -3371,27 +3541,40 @@ function getMonthlyExpenses(months){
     const d=new Date();d.setMonth(d.getMonth()-i);
     const yr=d.getFullYear(),mo=d.getMonth();
     const label=d.toLocaleString('default',{month:'short',year:'2-digit'});
-    const total=data.expenses.filter(e=>{
+    const expenses=data.expenses.filter(e=>{
       if(!e.date)return false;
       const ed=new Date(e.date);
       return ed.getFullYear()===yr&&ed.getMonth()===mo;
     }).reduce((s,e)=>s+e.amount,0);
-    result.push({label,total});
+    const txns=data.transactions.filter(tx=>{
+      if(!tx.date||tx.type==='Transfer'||tx.type==='Bill Payment'||tx.type==='Debt Payment'||tx.type==='Reconciliation')return false;
+      const td=new Date(tx.date);
+      return td.getFullYear()===yr&&td.getMonth()===mo;
+    }).reduce((s,tx)=>s+tx.amount,0);
+    result.push({label,total:expenses+txns,expenses,txns});
   }
   return result;
 }
 function drawChart(pts){
   const canvas=$('spending-chart');if(!canvas)return;
   const W=canvas.parentElement.offsetWidth||0;
-  if(W===0){setTimeout(()=>drawChart(pts),150);return;} // retry when visible
+  if(W===0){setTimeout(()=>drawChart(pts),150);return;}
   const ctx=canvas.getContext('2d');
   const H=220;
   canvas.width=W;canvas.height=H;
   ctx.clearRect(0,0,W,H);
-  const pad={t:20,r:20,b:36,l:56};
+  const pad={t:28,r:20,b:36,l:56};
   const cw=W-pad.l-pad.r,ch=H-pad.t-pad.b;
   const maxVal=Math.max(...pts.map(p=>p.total),1);
   const xStep=cw/(pts.length-1||1);
+
+  // Legend
+  ctx.font='10px -apple-system,sans-serif';
+  ctx.fillStyle='#6c63ff';ctx.fillRect(pad.l,6,10,8);
+  ctx.fillStyle='#555566';ctx.textAlign='left';ctx.fillText('Expenses',pad.l+13,14);
+  ctx.fillStyle='#f59e0b';ctx.fillRect(pad.l+80,6,10,8);
+  ctx.fillStyle='#555566';ctx.fillText('Purchases & Withdrawals',pad.l+93,14);
+
   // Grid
   ctx.strokeStyle='#1e1e3a';ctx.lineWidth=1;
   for(let i=0;i<=4;i++){
@@ -3400,28 +3583,48 @@ function drawChart(pts){
     ctx.fillStyle='#555566';ctx.font='11px -apple-system,sans-serif';ctx.textAlign='right';
     ctx.fillText('$'+(maxVal*i/4).toFixed(0),pad.l-6,y+4);
   }
-  // Fill gradient
+
+  // Fill gradient under total line
   const grad=ctx.createLinearGradient(0,pad.t,0,pad.t+ch);
-  grad.addColorStop(0,'rgba(108,99,255,0.35)');grad.addColorStop(1,'rgba(108,99,255,0.02)');
+  grad.addColorStop(0,'rgba(108,99,255,0.2)');grad.addColorStop(1,'rgba(108,99,255,0.02)');
   ctx.beginPath();
   pts.forEach((p,i)=>{const x=pad.l+i*xStep,y=pad.t+ch-(ch*p.total/maxVal);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
   ctx.lineTo(pad.l+(pts.length-1)*xStep,pad.t+ch);ctx.lineTo(pad.l,pad.t+ch);
   ctx.closePath();ctx.fillStyle=grad;ctx.fill();
-  // Line
+
+  // Expenses line (purple)
   ctx.beginPath();ctx.strokeStyle='#6c63ff';ctx.lineWidth=2.5;ctx.lineJoin='round';
-  pts.forEach((p,i)=>{const x=pad.l+i*xStep,y=pad.t+ch-(ch*p.total/maxVal);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+  pts.forEach((p,i)=>{const x=pad.l+i*xStep,y=pad.t+ch-(ch*(p.expenses||0)/maxVal);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
   ctx.stroke();
-  // Dots + x labels
   pts.forEach((p,i)=>{
-    const x=pad.l+i*xStep,y=pad.t+ch-(ch*p.total/maxVal);
-    ctx.beginPath();ctx.arc(x,y,4,0,Math.PI*2);
-    ctx.fillStyle='#6c63ff';ctx.fill();ctx.strokeStyle='#080812';ctx.lineWidth=2;ctx.stroke();
+    const x=pad.l+i*xStep,y=pad.t+ch-(ch*(p.expenses||0)/maxVal);
+    ctx.beginPath();ctx.arc(x,y,3.5,0,Math.PI*2);
+    ctx.fillStyle='#6c63ff';ctx.fill();ctx.strokeStyle='#080812';ctx.lineWidth=1.5;ctx.stroke();
+  });
+
+  // Transactions line (orange) — only if there's txn data
+  const hasTxns=pts.some(p=>(p.txns||0)>0);
+  if(hasTxns){
+    ctx.beginPath();ctx.strokeStyle='#f59e0b';ctx.lineWidth=2;ctx.lineJoin='round';
+    ctx.setLineDash([4,3]);
+    pts.forEach((p,i)=>{const x=pad.l+i*xStep,y=pad.t+ch-(ch*(p.txns||0)/maxVal);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+    ctx.stroke();ctx.setLineDash([]);
+    pts.forEach((p,i)=>{
+      const x=pad.l+i*xStep,y=pad.t+ch-(ch*(p.txns||0)/maxVal);
+      ctx.beginPath();ctx.arc(x,y,3,0,Math.PI*2);
+      ctx.fillStyle='#f59e0b';ctx.fill();ctx.strokeStyle='#080812';ctx.lineWidth=1.5;ctx.stroke();
+    });
+  }
+
+  // X labels
+  pts.forEach((p,i)=>{
+    const x=pad.l+i*xStep;
     ctx.fillStyle='#555566';ctx.font='10px -apple-system,sans-serif';ctx.textAlign='center';
     ctx.fillText(p.label,x,H-8);
   });
 }
 
-const pageTitles={dashboard:'Dashboard',budget:'Cash Flow',bills:'Bills & Payments',debt:'Debt Planner',networth:'Net Worth',insights:'Insights',cards:'Cards',quick:'Quick Update'};
+const pageTitles={dashboard:'Dashboard',budget:'Cash Flow',bills:'Bills & Payments',debt:'Debt Planner',networth:'Net Worth',insights:'Insights',cards:'Cards',advisor:'My Advisor',quick:'Quick Update'};
 function show(sec,btn){
   if(sec==='networth') setTimeout(drawNWHistoryChart,80);
   // Collapse simulator when leaving debt section
@@ -3458,7 +3661,7 @@ function openModal(type,extra){
   if(type==='purchase'){openPurchaseModal();return;}
   if(type==='txn'){openWithdrawal();return;}
   if(type==='goal'){openModal_goal();return;}
-  if(type==='asset'){$('asset-modal-title').textContent='Add Asset';$('a-id').value='';$('a-name').value='';$('a-cat').value='cash';$('a-value').value='';$('a-notes').value='';}
+  if(type==='asset'){$('asset-modal-title').textContent='Add Asset';$('a-id').value='';$('a-name').value='';$('a-cat').value='cash';$('a-value').value='';$('a-notes').value='';$('a-purchase-date').value='';$('a-original-value').value='';$('a-depr-rate').value='';$('a-linked-bill').value='';$('asset-delete-wrap').style.display='none';toggleAssetFields();}
   if(type==='target'){openAddTarget();return;}
   if(type==='settings'){
     const pin=localStorage.getItem(PIN_KEY);
@@ -3541,6 +3744,11 @@ function deleteBillFromModal(inlineId){
 }
 function openEditTxn(id){
   const t=data.transactions.find(x=>x.id===id);if(!t)return;
+  // Route transfers to the transfer modal
+  if(t.type==='Transfer'){
+    openEditTransfer(id);
+    return;
+  }
   currentTxnType=t.type;
   $('txn-title').textContent='Edit: '+t.type;
   $('t-id').value=t.id;$('t-desc').value=t.description;$('t-amount').value=t.amount;$('t-date').value=t.date||today();
@@ -3549,6 +3757,25 @@ function openEditTxn(id){
   populateAccountSelects();
   $('t-account').value=t.accountId||'';
   $('modal-txn').classList.add('open');
+}
+
+function openEditTransfer(id){
+  const t=data.transactions.find(x=>x.id===id);if(!t)return;
+  const accs=data.accounts||[];
+  if(accs.length<2){showToast('Need at least 2 accounts to edit a transfer.','error');return;}
+  const opts=accs.map(a=>`<option value="${a.id}">${acTypeIcon[a.type]||'🏦'} ${a.name} (${usd(a.balance)})</option>`).join('');
+  $('tr-from').innerHTML='<option value="">-- Select account --</option>'+opts;
+  $('tr-to').innerHTML='<option value="">-- Select account --</option>'+opts;
+  $('tr-from').value=t.accountId||'';
+  $('tr-to').value=t.toAccountId||'';
+  $('tr-amount').value=t.amount;
+  $('tr-date').value=t.date||today();
+  $('tr-note').value=t.note||'';
+  $('tr-overdraft-warn').style.display='none';
+  // Store original tx id so saveTransfer knows it's an edit
+  $('modal-transfer').dataset.editId=id;
+  $('modal-transfer').classList.add('open');
+  setTimeout(()=>$('tr-amount').focus(),260);
 }
 
 // ── SAVE FUNCTIONS ───────────────────────────────
@@ -3606,6 +3833,11 @@ function saveBill(){
   const creditLimit=btype==='creditcard'?sanitizeNum($('b-limit').value):0;
   const originalLoanAmount=btype==='loan'?(sanitizeNum($('b-original').value)||0):0;
   if(!name||!amt)return;
+  // Validate original loan amount
+  if(btype==='loan' && originalLoanAmount>0 && originalLoanAmount<balance){
+    showToast('Original loan amount can\'t be less than current balance.','error');
+    return;
+  }
   const eid=parseInt($('b-id').value);
   const prev=eid?data.bills.find(b=>b.id===eid):null;
   const isDebt=btype==='creditcard'||btype==='loan';
@@ -3777,13 +4009,34 @@ function setBillSort(s){
 function setTxnSearch(val){
   txnSearch=val.trim().toLowerCase();
   const clr=$('txn-clear');if(clr)clr.style.display=txnSearch?'block':'none';
+  // Auto-enable all-months when searching so results aren't hidden by month filter
+  if(txnSearch && !txnAllMonths){ txnAllMonths=true; _updateAllMonthsBtn(); }
   renderTxns();
 }
 function clearTxnSearch(){
   txnSearch='';
   const inp=$('txn-search');if(inp)inp.value='';
   const clr=$('txn-clear');if(clr)clr.style.display='none';
+  // Reset all-months when search is cleared
+  if(txnAllMonths){ txnAllMonths=false; _updateAllMonthsBtn(); }
   renderTxns();
+}
+function toggleTxnAllMonths(){
+  txnAllMonths=!txnAllMonths;
+  _updateAllMonthsBtn();
+  renderTxns();
+}
+function _updateAllMonthsBtn(){
+  const btn=$('txn-all-months-btn');
+  if(!btn)return;
+  btn.style.background=txnAllMonths?'var(--accent)':'rgba(255,255,255,.06)';
+  btn.style.color=txnAllMonths?'#fff':'var(--muted)';
+  btn.style.borderColor=txnAllMonths?'var(--accent)':'var(--border2)';
+  // Show/hide the month nav arrows when in all-months mode
+  const nav=$('txn-month-label');
+  const prev=document.querySelector('.mn-btn');
+  const next=$('txn-month-next');
+  [prev,next,nav].forEach(el=>{ if(el) el.style.opacity=txnAllMonths?'0.3':'1'; });
 }
 
 // ── EMPTY STATE HELPER ──────────────────────────────
@@ -3803,7 +4056,7 @@ function autoProcessScheduledBills(){
   data.bills.forEach(b=>{
     if(b.status!=='Scheduled') return;
     const d=daysUntil(b.dueDate);
-    if(d>=0) return;
+    if(d>0) return; // only process today (d===0) or overdue (d<0)
     const amt=b.scheduledAmount||b.amount||0;
     const acId=b.scheduledAccountId||0;
     // Debit linked account
@@ -4725,14 +4978,18 @@ function renderBudget(){
   }).join(''): emptyState('💰','No income yet','Add your salary, freelance work, or any other income sources.','+ Add Income',"openModal('income')");
 
   // Money Out -- expenses + bills combined
-  const expRows=data.expenses.map(e=>wrapSwipeable(`<div class="row" style="margin-bottom:0;border-radius:12px"><div>
-      <div class="row-label">${catIcon(e.category)}${e.category} ${recurBadge(e.frequency)}${e.autoLog?'<span class="autolog-badge">&#128259; auto</span>':''}</div>
+  const expRows=data.expenses.map(e=>{
+    const isPaid=e.paidMonth===thisMonth;
+    return wrapSwipeable(`<div class="row" style="margin-bottom:0;border-radius:12px${isPaid?';opacity:.6':''}"><div>
+      <div class="row-label">${catIcon(e.category)}${e.category} ${recurBadge(e.frequency)}${e.autoLog?'<span class="autolog-badge">&#128259; auto</span>':''}${isPaid?'<span style="margin-left:6px;font-size:10px;font-weight:700;background:rgba(34,197,94,.15);color:var(--green);border-radius:5px;padding:2px 7px">✓ PAID</span>':''}</div>
       <div class="row-sub">${[e.description,fmtDate(e.date)].filter(Boolean).join(' - ')}</div>
     </div><div class="row-actions">
       <span style="color:var(--red);font-weight:600">${usd(e.amount)}</span>
+      <button class="btn btn-sm" style="background:${isPaid?'rgba(34,197,94,.15)':'rgba(255,255,255,.06)'};color:${isPaid?'var(--green)':'var(--muted)'};border:1px solid ${isPaid?'rgba(34,197,94,.3)':'var(--border2)'};" onclick="toggleExpensePaid(${e.id})" title="${isPaid?'Mark unpaid':'Mark paid'}">${isPaid?'✓':'○'}</button>
       <button class="btn btn-secondary btn-sm" onclick="openEditExpense(${e.id})">✏️</button>
       <button class="btn btn-danger btn-sm show-desktop" onclick="deleteItem('expenses',${e.id})">✕</button>
-    </div></div>`,'expenses',e.id,`openEditExpense(${e.id})`));
+    </div></div>`,'expenses',e.id,`openEditExpense(${e.id})`);
+  });
 
   const billTypeIcon={bill:'📋',creditcard:'💳',loan:'🏦',promo:'🎁'};
   const billRows=data.bills.map(b=>`
@@ -4751,6 +5008,7 @@ function renderBudget(){
 
   const allOut=[...expRows,...billRows];
   $('expense-list').innerHTML=allOut.length?allOut.join(''):emptyState('💸','No outgoings yet','Add your monthly expenses and bills to see your full cash flow picture.','+ Add Expense',"openModal('expense')");
+  renderPaycheckCalendar();
 }
 
 function renderBills(){
@@ -4992,9 +5250,10 @@ function renderTxns(){
 
   const excluded=['Bill Payment','Debt Payment','Reconciliation'];
 
-  // All transactions for selected month
+  // All transactions for selected month (or all-time if toggle active)
   const monthAll=[...data.transactions].filter(tx=>{
     if(excluded.includes(tx.type)||!tx.date)return false;
+    if(txnAllMonths) return true;
     return tx.date.slice(0,7)===txnMonth;
   }).sort((a,b)=>b.date.localeCompare(a.date));
 
@@ -5073,11 +5332,15 @@ function renderTxns(){
     const method=tx.methodLabel||(tx.accountId?(data.accounts||[]).find(a=>a.id===tx.accountId)?.name:'');
     const catLabel=tx.category?catIcon(tx.category)+tx.category:'';
     const sub=[fmtDate(tx.date),tx.type,method,catLabel].filter(Boolean).join(' - ');
-    const rowHtml=`<div class="row" style="margin-bottom:0;border-radius:12px">
+    const rowHtml=`<div class="row" style="margin-bottom:0;border-radius:12px${tx.type==='Transfer'?';background:rgba(34,197,94,.05);border:1px solid rgba(34,197,94,.12)':''}">
       <div>
         <div class="row-label">${tx.description}</div>
         <div class="row-sub">${sub}</div>
-        ${tx.note?`<div class="txn-note">&#128203; ${tx.note}</div>`:''}
+        ${tx.note?`<div class="txn-note-wrap" onclick="event.stopPropagation();this.nextElementSibling&&this.nextElementSibling.classList.toggle('open');this.querySelector('.txn-note-preview').style.display=this.nextElementSibling.classList.contains('open')?'none':''" title="${tx.note.replace(/"/g,'&quot;')}">
+          <span class="txn-note-icon">📝</span>
+          <span class="txn-note-preview">${tx.note}</span>
+        </div>
+        <div class="txn-note-full">${tx.note}</div>`:''}
         ${tx.tags&&tx.tags.length?`<div class="txn-tags">${tx.tags.map(g=>`<span class="txn-tag${_activeTxnTagFilter===g?' active-filter':''}" onclick="setTagFilter(_activeTxnTagFilter==='${g}'?null:'${g}')">#${g}</span>`).join('')}</div>`:''}
       </div>
       <div class="row-actions">
@@ -5843,11 +6106,34 @@ function dismissAutoProcess(){
 let _undoTimer=null;
 let _undoState=null;
 
+function cleanupOrphanedRefs(key, id){
+  if(key==='accounts'){
+    // Null out accountId refs in income, expenses, transactions
+    data.income.forEach(i=>{ if(i.accountId===id) i.accountId=0; });
+    data.expenses.forEach(e=>{ if(e.accountId===id) e.accountId=0; });
+    data.transactions.forEach(tx=>{ if(tx.accountId===id) tx.accountId=0; });
+    // Clear scheduledAccountId on bills
+    data.bills.forEach(b=>{ if(b.scheduledAccountId===id){ b.scheduledAccountId=null; b.scheduledAmount=null; if(b.status==='Scheduled') b.status='Pending'; } });
+    data.expenses.forEach(e=>{ if(e.autoLogAccountId===id) e.autoLogAccountId=0; });
+    data.bills.forEach(b=>{ if(b.autoLogAccountId===id) b.autoLogAccountId=0; });
+  }
+  if(key==='bills'){
+    const bill=data.bills.find(b=>b.id===id);
+    if(bill&&(bill.btype==='creditcard'||bill.btype==='promo')){
+      // Remove promo transactions tied to this card
+      data.transactions=data.transactions.filter(tx=>tx.cardId!==id);
+    }
+    // Null out cardId in any remaining transactions
+    data.transactions.forEach(tx=>{ if(tx.cardId===id) tx.cardId=0; });
+  }
+}
+
 function deleteItem(key,id){
   const item=data[key].find(i=>i.id===id);
   if(!item) return;
   // Store undo state
   _undoState={key,id,item,index:data[key].findIndex(i=>i.id===id)};
+  cleanupOrphanedRefs(key,id);
   data[key]=data[key].filter(i=>i.id!==id);
   saveData();renderAll();
   showUndoToast(key);
@@ -7425,6 +7711,82 @@ function getPaycheckCount(income, year, month){
   return dates.length;
 }
 
+let _paycheckCalOpen = true;
+
+function togglePaycheckCal(){
+  _paycheckCalOpen = !_paycheckCalOpen;
+  const body = $('paycheck-cal-body');
+  const btn  = $('paycheck-cal-toggle');
+  if(body) body.style.display = _paycheckCalOpen ? 'block' : 'none';
+  if(btn)  btn.textContent    = _paycheckCalOpen ? '▾ Hide' : '▸ Show';
+}
+
+function renderPaycheckCalendar(){
+  const card = $('paycheck-cal-card');
+  const body = $('paycheck-cal-body');
+  if(!card || !body) return;
+
+  // Only show for income sources that are bi-weekly with a lastPayDate
+  const biweekly = data.income.filter(i => i.frequency === 'Bi-weekly' && i.lastPayDate);
+  if(!biweekly.length){ card.style.display = 'none'; return; }
+
+  card.style.display = 'block';
+  body.style.display = _paycheckCalOpen ? 'block' : 'none';
+
+  const now = new Date();
+  const months = [];
+  for(let m = 0; m < 3; m++){
+    const d = new Date(now.getFullYear(), now.getMonth() + m, 1);
+    months.push({ year: d.getFullYear(), month: d.getMonth() });
+  }
+
+  const dayNames = ['S','M','T','W','T','F','S'];
+  const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  body.innerHTML = biweekly.map(inc => {
+    const calendars = months.map(({ year, month }) => {
+      const paycheckDates = getPaycheckDates(inc, year, month) || [];
+      const paycheckDays  = new Set(paycheckDates.map(d => d.getDate()));
+      const firstDay = new Date(year, month, 1).getDay();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const todayDate = now.getFullYear() === year && now.getMonth() === month ? now.getDate() : -1;
+
+      // Build grid
+      let cells = '';
+      // Day-name headers
+      dayNames.forEach(d => { cells += `<div style="font-size:9px;color:var(--muted);text-align:center;font-weight:700;padding-bottom:2px">${d}</div>`; });
+      // Empty cells before 1st
+      for(let i = 0; i < firstDay; i++) cells += '<div></div>';
+      // Day cells
+      for(let d = 1; d <= daysInMonth; d++){
+        const isPayday  = paycheckDays.has(d);
+        const isToday   = d === todayDate;
+        const bg  = isPayday  ? 'var(--green)'                    : isToday ? 'rgba(108,99,255,.25)' : 'transparent';
+        const clr = isPayday  ? '#fff'                             : isToday ? 'var(--accent)'        : 'var(--muted)';
+        const fw  = isPayday || isToday ? '700' : '400';
+        const br  = isPayday  ? '50%'   : isToday ? '50%'        : '0';
+        const sz  = isPayday  ? '11px'  : '10px';
+        cells += `<div style="text-align:center;font-size:${sz};color:${clr};font-weight:${fw};background:${bg};border-radius:${br};width:22px;height:22px;line-height:22px;margin:1px auto">${d}</div>`;
+      }
+
+      const count = paycheckDays.size;
+      const isThreeCheck = count === 3;
+      return `<div style="flex:1;min-width:180px">
+        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">
+          <span>${monthNames[month]} ${year}</span>
+          ${count > 0 ? `<span style="background:${isThreeCheck?'rgba(34,197,94,.15)':'rgba(108,99,255,.12)'};color:${isThreeCheck?'var(--green)':'var(--accent2)'};border-radius:5px;padding:1px 7px;font-size:10px">${count} paycheck${count>1?'s':''}${isThreeCheck?' 🎉':''}</span>` : ''}
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:1px">${cells}</div>
+      </div>`;
+    }).join('');
+
+    return `<div style="margin-bottom:14px">
+      <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px">💰 ${inc.source} <span style="font-size:10px;font-weight:400;color:var(--muted)">· Bi-weekly · ${usd(inc.amount)}/paycheck</span></div>
+      <div style="display:flex;gap:16px;flex-wrap:wrap">${calendars}</div>
+    </div>`;
+  }).join('<hr style="border:none;border-top:1px solid var(--border);margin:12px 0">');
+}
+
 
 
 
@@ -8262,6 +8624,18 @@ function populateAutoLogAccountSelect(selId){
 
 
 // ── MAIN AUTO-LOG RUNNER ──────────────────────────────────────
+function toggleExpensePaid(id){
+  const e=data.expenses.find(x=>x.id===id);if(!e)return;
+  const thisMonth=today().slice(0,7);
+  e.paidMonth=(e.paidMonth===thisMonth)?null:thisMonth;
+  saveData();renderBudget();
+}
+
+function resetStaleExpensePaid(){
+  const thisMonth=today().slice(0,7);
+  data.expenses.forEach(e=>{ if(e.paidMonth&&e.paidMonth!==thisMonth) e.paidMonth=null; });
+}
+
 function runAutoLog(){
   const currentMonth = today().slice(0,7);
   const lastRun = localStorage.getItem(AUTO_LOG_KEY);
