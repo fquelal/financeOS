@@ -2304,7 +2304,7 @@ canvas{width:100%!important;}
 <script>
 'use strict';
 const STORAGE_KEY='financeOS_v4';
-const APP_VERSION='v1.6.0';
+const APP_VERSION='v1.6.1';
 const PIN_KEY='financeOS_pin';
 let data={income:[],expenses:[],bills:[],cards:[],transactions:[],assets:[],targets:[],accounts:[]};
 let currentTxnType='Withdrawal';
@@ -3849,7 +3849,7 @@ function saveBill(){
   const apr=sanitizeNum($('b-apr').value);
   const creditLimit=btype==='creditcard'?sanitizeNum($('b-limit').value):0;
   const originalLoanAmount=btype==='loan'?(sanitizeNum($('b-original').value)||0):0;
-  if(!name||!amt)return;
+  if(!name || (!amt && btype !== 'creditcard' && btype !== 'loan'))return;
   // Validate original loan amount
   if(btype==='loan' && originalLoanAmount>0 && originalLoanAmount<balance){
     showToast('Original loan amount can\'t be less than current balance.','error');
