@@ -2323,7 +2323,7 @@ canvas{width:100%!important;}
 <script>
 'use strict';
 const STORAGE_KEY='financeOS_v4';
-const APP_VERSION='v1.6.4';
+const APP_VERSION='v1.6.5';
 const PIN_KEY='financeOS_pin';
 let data={income:[],expenses:[],bills:[],cards:[],transactions:[],assets:[],targets:[],accounts:[]};
 let currentTxnType='Withdrawal';
@@ -4859,6 +4859,7 @@ function renderDashboard(){
   // Collect upcoming bills (next 7 days + overdue)
   const upcomingBills=data.bills.filter(b=>{
     if(b.status==='Paid') return false;
+    if((b.btype==='creditcard'||b.btype==='loan')&&!b.balance&&!b.amount) return false;
     const d=b.dueDate;
     if(!d) return false;
     return d>=past7&&d<=next7||(b.status==='Overdue')||daysUntil(d)<0;
