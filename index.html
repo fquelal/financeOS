@@ -1059,14 +1059,11 @@ canvas{width:100%!important;}
       <button id="mobile-ham" onclick="toggleSidebar()">&#9776;</button>
     </div>
     <div id="mobile-tabs">
-      <button class="mtab active" id="mtab-dashboard" onclick="show('dashboard',null)">Dashboard</button>
+      <button class="mtab active" id="mtab-dashboard" onclick="show('dashboard',null)">Home</button>
       <button class="mtab" id="mtab-bills" onclick="show('bills',null)">Bills</button>
+      <button class="mtab" id="mtab-money" onclick="show('budget',null)">Money</button>
       <button class="mtab" id="mtab-networth" onclick="show('networth',null)">Accounts</button>
-      <button class="mtab" id="mtab-budget" onclick="show('budget',null)">Money</button>
-      <button class="mtab" id="mtab-quick" onclick="show('quick',null)">Transactions</button>
       <button class="mtab" id="mtab-insights" onclick="show('insights',null)">Insights</button>
-      <button class="mtab" id="mtab-debt" onclick="show('debt',null)">Debt</button>
-      <button class="mtab" id="mtab-cards" onclick="show('cards',null)">Cards</button>
       <button class="mtab" id="mtab-advisor" onclick="show('advisor',null)">Advisor</button>
     </div>
   </div>
@@ -1125,6 +1122,10 @@ canvas{width:100%!important;}
 
     <!-- BUDGET -->
     <div id="budget" class="section">
+      <div class="plan-toggle" style="margin-bottom:18px">
+        <button id="sub-money-overview" class="active" onclick="showSub('budget','budget')">Overview</button>
+        <button id="sub-money-log" onclick="showSub('quick','budget')">Log</button>
+      </div>
       <div style="margin-bottom:18px">
         <h2 class="sec-title" data-i18n="Cash Flow">Cash Flow</h2>
       </div>
@@ -1197,6 +1198,10 @@ canvas{width:100%!important;}
 
     <!-- DEBT PLANNER -->
     <div id="debt" class="section">
+      <div class="plan-toggle" style="margin-bottom:18px">
+        <button id="sub-debt-spending" onclick="showSub('insights','insights')">Spending</button>
+        <button id="sub-debt-debt" class="active" onclick="showSub('debt','insights')">Debt</button>
+      </div>
       <div class="sec-header">
         <h2 class="sec-title" data-i18n="Debt Planner">Debt Planner</h2>
       </div>
@@ -1279,6 +1284,10 @@ canvas{width:100%!important;}
 
     <!-- NET WORTH -->
     <div id="networth" class="section">
+      <div class="plan-toggle" style="margin-bottom:18px">
+        <button id="sub-acct-accounts" class="active" onclick="showSub('networth','networth')">Accounts</button>
+        <button id="sub-acct-cards" onclick="showSub('cards','networth')">Cards</button>
+      </div>
       <div style="margin-bottom:18px">
         <h2 class="sec-title" data-i18n="Net Worth">Net Worth</h2>
       </div>
@@ -1336,6 +1345,10 @@ canvas{width:100%!important;}
 
     <!-- INSIGHTS -->
     <div id="insights" class="section">
+      <div class="plan-toggle" style="margin-bottom:18px">
+        <button id="sub-ins-spending" class="active" onclick="showSub('insights','insights')">Spending</button>
+        <button id="sub-ins-debt" onclick="showSub('debt','insights')">Debt</button>
+      </div>
       <h2 class="sec-title" style="margin-bottom:18px" data-i18n="Insights">Insights</h2>
       <div id="insights-alerts"></div>
 
@@ -1401,6 +1414,10 @@ canvas{width:100%!important;}
 
     <!-- CARDS -->
     <div id="cards" class="section">
+      <div class="plan-toggle" style="margin-bottom:18px">
+        <button id="sub-cards-accounts" onclick="showSub('networth','networth')">Accounts</button>
+        <button id="sub-cards-cards" class="active" onclick="showSub('cards','networth')">Cards</button>
+      </div>
       <div class="sec-header">
         <h2 class="sec-title" data-i18n="Cards">Cards</h2>
       </div>
@@ -1483,6 +1500,10 @@ canvas{width:100%!important;}
 
     <!-- QUICK UPDATE -->
     <div id="quick" class="section">
+      <div class="plan-toggle" style="margin-bottom:18px">
+        <button id="sub-log-overview" onclick="showSub('budget','budget')">Overview</button>
+        <button id="sub-log-log" class="active" onclick="showSub('quick','budget')">Log</button>
+      </div>
       <h2 class="sec-title" style="margin-bottom:6px" data-i18n="Quick Update">Quick Update</h2>
       <div id="quick-alerts"></div>
       <p style="color:var(--muted);font-size:13px;margin-bottom:20px">Log cash withdrawals and purchases. Bill and debt payments are handled in Bills &amp; Payments.</p>
@@ -2438,7 +2459,7 @@ canvas{width:100%!important;}
 <script>
 'use strict';
 const STORAGE_KEY='financeOS_v4';
-const APP_VERSION='v1.9.2';
+const APP_VERSION='v1.9.3';
 const PIN_KEY='financeOS_pin';
 let data={income:[],expenses:[],bills:[],cards:[],transactions:[],assets:[],targets:[],accounts:[]};
 let currentTxnType='Withdrawal';
@@ -3783,10 +3804,25 @@ function drawChart(pts){
 }
 
 const pageTitles={dashboard:'Dashboard',budget:'Cash Flow',bills:'Bills & Payments',debt:'Debt Planner',networth:'Net Worth',insights:'Insights',cards:'Cards',advisor:'My Advisor',quick:'Quick Update'};
-const PAGE_ORDER=['dashboard','bills','networth','budget','quick','insights','debt','cards','advisor'];
+const PAGE_ORDER=['dashboard','bills','budget','networth','insights','advisor'];
+const TAB_MAP={dashboard:'dashboard',bills:'bills',budget:'money',quick:'money',networth:'networth',cards:'networth',insights:'insights',debt:'insights',advisor:'advisor'};
 let _currentSec='dashboard';
 let _swipeDir=null;
 let _touchStartX=0,_touchStartY=0,_touchLocked=false;
+
+function showSub(sec,parentSec){
+  _swipeDir=null;
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  $(sec).classList.add('active');
+  _currentSec=parentSec;
+  document.querySelectorAll('.mtab').forEach(t=>t.classList.remove('active'));
+  const mt=$('mtab-'+(TAB_MAP[parentSec]||parentSec));
+  if(mt) mt.classList.add('active');
+  renderAll();
+  if(sec==='insights'){const months=parseInt($('chart-months')?$('chart-months').value:3)||3;setTimeout(()=>drawChart(getMonthlyExpenses(months)),80);}
+  if(sec==='cards') setTimeout(()=>renderCards(),50);
+  if(sec==='quick') setTimeout(()=>renderTxns(),50);
+}
 
 function _initSwipe(){
   const el=$('content');
@@ -3841,9 +3877,9 @@ function show(sec,btn){
     setTimeout(()=>el.classList.remove('swipe-in-right','swipe-in-left'),280);
   }
   if(btn) btn.classList.add('active');
-  // Sync mobile tab strip
+  // Sync mobile tab strip using TAB_MAP
   document.querySelectorAll('.mtab').forEach(t=>t.classList.remove('active'));
-  const activeTab=$('mtab-'+sec);
+  const activeTab=$('mtab-'+(TAB_MAP[sec]||sec));
   if(activeTab){
     activeTab.classList.add('active');
     const strip=$('mobile-tabs');
@@ -3852,7 +3888,9 @@ function show(sec,btn){
       strip.scrollTo({left:tabCenter-strip.offsetWidth/2,behavior:'smooth'});
     }
   }
-  _currentSec=sec;
+  _currentSec=PAGE_ORDER.includes(sec)?sec:(
+    sec==='quick'?'budget':sec==='cards'?'networth':sec==='debt'?'insights':sec
+  );
   closeSidebar();
   renderAll();
   // Force re-render sections that depend on visibility (chart width, etc.)
